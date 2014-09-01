@@ -8,11 +8,11 @@ clear all;
 
 %Setting parameters and domain:
 eps = 0.1;
-N = 10;
+N = ceil(0.5/eps);
 
 x = linspace(0,1,N+2);
 dx = x(2) - x(1);
-dt = 0.25*dx;
+dt = min(0.25*dx^2, dx);
 nt = 1000;
 
 %Setting initial condition:
