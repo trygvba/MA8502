@@ -6,6 +6,7 @@ clear all;
 %NOTE: Central differences should be stable only when dx<2eps.
 
 
+
 %Setting parameters and domain:
 eps = 0.01;
 N = ceil(0.5/eps)-1;
@@ -39,3 +40,7 @@ for i=1:nt
     U_central = U_central -dt/(2*dx) * ([U_central(2:end) 1] - [0 U_central(1:(end-1))]) + eps*dt/dx^2 * diff([0 U_central 1],2);
     
 end
+
+
+
+
