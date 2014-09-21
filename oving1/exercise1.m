@@ -6,6 +6,7 @@ clear all;
 %NOTE: Central differences should be stable only when dx<2eps.
 
 
+
 %Setting parameters and domain:
 eps = 0.1;
 N = 10;
@@ -31,3 +32,7 @@ for i=1:nt
     drawnow
     U_upwind = U_upwind -dt/dx * diff([0 U_upwind]) + eps*dt/dx^2 * diff([0 U_upwind 1],2);
 end
+
+
+
+
