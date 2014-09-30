@@ -4,9 +4,14 @@ import quadrature_nodes as qn
 
 def diff_matrix(xis,n):
     """This function returns the derivative matrix for the Lagrange interpolation
-    functions l_i(xi).
-    l_i(x_k) = delta_(i,k) (Kronecker delta).
+    INPUT:
+        xis: Array with GLL quadrature points on the reference interval [-1,1].
+        n: Number of quadrature points. Must be len(xis).
+    
+    OUTPUT:
+        D: Derivative matrix where D[i,j] = l'_j(xis[j]).
     """
+
     #Initialise D-matrix:
     D = np.zeros( (n,n) )
     L = np.zeros( n )
