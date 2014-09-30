@@ -2,7 +2,7 @@
 import numpy as np
 import scipy.linalg as la
 
-def Legendre(n,x):
+def Legendre(x, n):
     """Computes the Legendre polynomial
     of order n at point x.
     """
@@ -16,7 +16,7 @@ def Legendre(n,x):
     return Ln[n]
 
 
-def LegendreDerivative(n,x):
+def LegendreDerivative(x,n):
     """Computes the derivative of the Legendre
     polynomial of order n at x.
     """
@@ -26,7 +26,7 @@ def LegendreDerivative(n,x):
     elif (n==1):
         return 1.
     elif (n>1):
-        return n/(1-x**2)*Legendre(n-1,x) - n*x/(1-x**2)*Legendre(n,x)
+        return n/(1-x**2)*Legendre(x,n-1) - n*x/(1-x**2)*Legendre(x,n)
     else:
         return -1
 
@@ -49,7 +49,7 @@ def GL_points_and_weights(n):
     p = np.sort ( la.eig(A, right=False) ).real
     
     for i in range(n):
-        w[i] = 2./( (1-p[i]**2)*(LegendreDerivative(n, p[i] ))**2 )
+        w[i] = 2./( (1-p[i]**2)*(LegendreDerivative( p[i], n ))**2 )
 
     return p, w
 
@@ -79,8 +79,8 @@ def GLL_points(n):
         p_old = 0.
         while (abs(p[i]-p_old) > tol):
             p_old = p[i]
-            L = Legendre(n-1,p_old)
-            Ld = LegendreDerivative(n-1,p_old)
+            L = Legendre(p_old, n-1)
+            Ld = LegendreDerivative(p_old, n-1)
             p[i] = p_old + ( (1-p_old**2)*Ld)/( (n-1)*n*L )
 
     return p
@@ -90,7 +90,7 @@ def GLL_weights(n,p):
     """
     w = np.zeros(n)
     for i in range(n):
-        L = Legendre(n-1,p[i])
+        L = Legendre(p[i], n-1)
         w[i] = 2./( (n-1)*n*L^2)
 
     return w
