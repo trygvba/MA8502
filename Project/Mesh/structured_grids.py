@@ -2,6 +2,7 @@
 
 import numpy as np
 import quadrature_nodes as qn
+import gordon_hall as gh
 
 def diff_matrix(xis,n):
     """This function returns the derivative matrix for the Lagrange interpolation
@@ -188,3 +189,4 @@ def local_to_global_top_down(idim, jdim, n):
 
 
     return G
+
