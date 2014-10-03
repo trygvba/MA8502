@@ -146,3 +146,45 @@ def local_to_global_matrix( idim, jdim, n, patch=False, patch_elements=0):
 
 
     return G
+
+
+def local_to_global_top_down(idim, jdim, n):
+    """ Similar to local_to_global, only now the data structure
+    makes it easier to plot the resulting grid.
+
+    INPUT:
+        idim: Number of points in the x-direction.
+        jdim: Number of points in the y-direction.
+        n: Number of GLL-points for each dimension and element.
+    OUTPUT:
+        G: Local-to-global matrix.
+    """
+    
+    #Number of elements in x-direction:
+    Nx = idim-1
+    #Nuber of elements in y-direction:
+    Ny = jdim-1
+
+    #Number of elements:
+    num_el = Nx * Ny
+
+    #Calculating total number of points:
+    np_x = Nx*(n-1) + 1
+    np_y = Ny*(n-1) + 1
+
+    tot_points = np_x * np_y
+    
+    grid_indices = np.arange(tot_points).reshape ( (np_y, np_x) )
+
+    #Now we need to unravel this matrix and put it correctly into out G-matrix:
+    G = np.zeros( (num_el, n**2), dtype='uint32' )
+    for k in range(num_el):
+        #Start indices:
+        i = (n-1)*(k/Nx)
+        j = (n-1)*(k%Nx)
+
+        #Unravel indices:
+        G[k,:] = grid_indices[i:(i+n), j:(j+n)].ravel()
+
+
+    return G
