@@ -5,7 +5,29 @@ import gordon_hall as gh
 import structured_grids as sg
 import matplotlib.pyplot as plt
 
+###############################
+#   PRELIMINARY DATA:
+###############################
 
+R = 507.79956092981
+yrekt = 493.522687570593
+xmax = 501.000007802345
+xmin = -484.456616747519
+dx = 0.001
+xf = 0.2971739920760934289144667697 #x-value where f(x) has its max
+
+x0 = R+xmin #origin of semicircle shape
+xc = x0 + np.sqrt(R**2-yrekt**2) #intersection point in x; associated with yrekt
+t1p = np.asin(yrekt/R)    #lower intersection point in t
+t1m = -np.asin(yrekt/R)+2*np.pi #upper intersection point in t
+yi = np.sqrt(R**2 - (xf -x0)**2) #absolute value of y that intersects vertical line from airfoil to circle
+#angle between gamma1 and gamma3 on element 1
+theta1 = np.acos((xc-x0)/np.sqrt((xc-x0)**2+yrekt**2))
+theta2 = np.acos((xf-x0)/np.sqrt((xf-x0)**2+yi**2));
+
+#Global functions:
+def outer_circle(theta):
+    return R*np.cos(theta)+x0, R*np.sin(theta)
 
 
 ###############################
