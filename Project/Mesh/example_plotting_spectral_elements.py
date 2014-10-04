@@ -87,7 +87,7 @@ xdim = (n-1)*4+1
 tot_points = ydim*xdim
 
 #Set local-to-global matrix:
-G = sg.local_to_global_top_down( 5, 2, n )
+G = sg.local_to_global_top_down( 5, 2, n, n)
 
 # Initialise coordinate matrices:
 X = np.zeros( tot_points )

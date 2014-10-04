@@ -131,15 +131,17 @@ def gamma_64(xi):
 ###########################################
 
 #Order of GLL-points:
-n = 500
-xis = qn.GLL_points(n)
+nx = 5
+ny = 10
+xis = qn.GLL_points(nx)
+etas = qn.GLL_points(ny)
 
 #Local to global matrix:
-G = sg.local_to_global_top_down(7, 2, n)
+G = sg.local_to_global_top_down(7, 2, nx, ny)
 
 # Dimensions of resulting matrix: (need to change)
-ydim = n
-xdim = (n-1)*6+1
+ydim = ny
+xdim = (nx-1)*6+1
 
 #Total number of points:
 tot_points = ydim*xdim
@@ -155,32 +157,32 @@ Y = np.zeros( tot_points )
 #Let's try to insert the global coordinates coorectly:
 
 # First element:
-xtemp, ytemp = gh.gordon_hall_grid(gamma_11, gamma_12, gamma_13, gamma_14, xis, xis)
+xtemp, ytemp = gh.gordon_hall_grid(gamma_11, gamma_12, gamma_13, gamma_14, xis, etas)
 X[G[0]] = xtemp.ravel()
 Y[G[0]] = ytemp.ravel()
 
 # Second element:
-xtemp, ytemp = gh.gordon_hall_grid(gamma_21, gamma_22, gamma_23, gamma_24, xis, xis)
+xtemp, ytemp = gh.gordon_hall_grid(gamma_21, gamma_22, gamma_23, gamma_24, xis, etas)
 X[G[1]] = xtemp.ravel()
 Y[G[1]] = ytemp.ravel()
 
 # Third element:
-xtemp, ytemp = gh.gordon_hall_grid(gamma_31, gamma_32, gamma_33, gamma_34, xis, xis)
+xtemp, ytemp = gh.gordon_hall_grid(gamma_31, gamma_32, gamma_33, gamma_34, xis, etas)
 X[G[2]] = xtemp.ravel()
 Y[G[2]] = ytemp.ravel()
 
 # Fourth element:
-xtemp, ytemp = gh.gordon_hall_grid(gamma_41, gamma_42, gamma_43, gamma_44, xis, xis)
+xtemp, ytemp = gh.gordon_hall_grid(gamma_41, gamma_42, gamma_43, gamma_44, xis, etas)
 X[G[3]] = xtemp.ravel()
 Y[G[3]] = ytemp.ravel()
 
 # Fifth element:
-xtemp, ytemp = gh.gordon_hall_grid(gamma_51, gamma_52, gamma_53, gamma_54, xis, xis)
+xtemp, ytemp = gh.gordon_hall_grid(gamma_51, gamma_52, gamma_53, gamma_54, xis, etas)
 X[G[4]] = xtemp.ravel()
 Y[G[4]] = ytemp.ravel()
 
 # Sixth element:
-xtemp, ytemp = gh.gordon_hall_grid(gamma_61, gamma_62, gamma_63, gamma_64, xis, xis)
+xtemp, ytemp = gh.gordon_hall_grid(gamma_61, gamma_62, gamma_63, gamma_64, xis, etas)
 X[G[5]] = xtemp.ravel()
 Y[G[5]] = ytemp.ravel()
 
