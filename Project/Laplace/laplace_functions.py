@@ -105,11 +105,6 @@ def assemble_local_stiffness_matrix(D, G_tot, N, weights):
         A_K: Local stiffness matrix for element K.
     """
 
-    xD = np.dot(X,D)
-    xTD = np.dot(X.T, D)
-    yD = np.dot(y, D)
-    yTD = np.dot(y.T, D)
-
     # Initialise local stiffness matrix:
     num_points = N**2
     A_K = np.zeros( (num_points, num_points) )
