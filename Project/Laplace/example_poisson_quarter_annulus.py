@@ -31,12 +31,12 @@ def gamma4(xi):
     return 0.5*(3.+xi), 0.
 
 def f(x,y):
-    return -1.
+    return x**2 + y**2
 
 ############################
 
 # Order of GLL-points:
-N = 20
+N = 50
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N, xis)
 
