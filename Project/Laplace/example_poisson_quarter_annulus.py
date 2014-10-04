@@ -36,7 +36,7 @@ def f(x,y):
 ############################
 
 # Order of GLL-points:
-N = 50
+N = 20
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N, xis)
 

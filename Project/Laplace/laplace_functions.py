@@ -75,21 +75,21 @@ def calculate_local_stiffness_element( I, J, D, G_tot, weights ):
     i = I%N
     j = I/N
 
-    m = J%N
-    n = J/N
+    k = J%N
+    l = J/N
 
     #Initialise value:
     A = 0.
-    A += D[m,i]*G_tot[j*N+m, 0, 1]*D[n,j]*weights[m]*weights[j]
-    A += weights[n]*weights[i]*D[n,j]*G_tot[N*n+i, 1, 0]*D[m,i]
-
-    if (n==j):
+    A += weights[i]*weights[l]*D[j,l]*D[k,i]*G_tot[l*N+i,1,0]
+    A += weights[k]*weights[j]*D[l,j]*D[i,k]*G_tot[j*N+k,0,1]
+    
+    if (j==l):
         for alpha in range(N):
-            A += weights[alpha]*weights[j]*D[alpha,i]*G_tot[N*j+alpha, 0, 0]*D[m,alpha]
+            A += weights[alpha]*weights[l]*D[k,alpha]*D[i,alpha]*G_tot[l*N+alpha, 0, 0]
 
-    if (m==i):
+    if (i == k):
         for beta in range(N):
-            A += weights[i]*weights[beta]*D[beta,j]*G_tot[N*beta+i, 1, 1]*D[n,beta]
+            A += weights[k]*weights[beta]*D[j,beta]*D[l,beta]*G_tot[beta*N+k,1,1]
 
     return A
 
