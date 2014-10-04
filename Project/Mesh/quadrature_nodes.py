@@ -91,6 +91,6 @@ def GLL_weights(n,p):
     w = np.zeros(n)
     for i in range(n):
         L = Legendre(p[i], n-1)
-        w[i] = 2./( (n-1)*n*L^2)
+        w[i] = 2./( (n-1)*n*L**2)
 
     return w
