@@ -9,21 +9,22 @@ import matplotlib.pyplot as plt
 #   PRELIMINARY DATA:
 ###############################
 
+
+##mesh inputs
+thetadef = 30 #angle between elements 3,4 etc
+ratio = 10 #ratio of GLL-points in x,y: y/x = ratio
+gllx = 17 #number of GLL-points in x
+
+#constants
 R = 507.79956092981
 yrekt = 493.522687570593
 xmax = 501.000007802345
 xmin = -484.456616747519
 dx = 0.001
 xf = 0.2971739920760934289144667697 #x-value where f(x) has its max
+##angle from xf to define elements 3 and 4 (in radians)
 
-x0 = R+xmin #origin of semicircle shape
-xc = x0 + np.sqrt(R**2-yrekt**2) #intersection point in x; associated with yrekt
-t1p = np.arcsin(yrekt/R)    #lower intersection point in t
-t1m = -np.arcsin(yrekt/R)+2*np.pi #upper intersection point in t
-yi = np.sqrt(R**2 - (xf -x0)**2) #absolute value of y that intersects vertical line from airfoil to circle
-#angle between gamma1 and gamma3 on element 1
-#theta1 = np.arccos((xc-x0)/np.sqrt((xc-x0)**2+yrekt**2))
-#theta2 = np.arccos((xf-x0)/np.sqrt((xf-x0)**2+yi**2));
+thetadef = thetadef*np.pi/180
 
 #Global functions:
 def outer_circle(theta):
@@ -37,7 +38,18 @@ def airfoil_lower(x):
 
 def theta(x,y):
     return np.arccos((x-x0)/np.sqrt((x-x0)**2+y**2))
+    
+#crunch
+x0 = R+xmin #origin of semicircle shape
+xc = x0 + np.sqrt(R**2-yrekt**2) #intersection point in x; associated with yrekt
+si = np.sin(thetadef)*(x0-xf) + airfoil_lower(xf)*np.cos(thetadef) + np.sqrt( R**2 - np.cos(thetadef)**2 * (xf + x0)**2 + 2*airfoil_lower(xf)*np.sin(thetadef)*np.cos(thetadef)*(xf-x0)- airfoil_lower(xf)**2 * np.sin(thetadef)**2)
+#siupper = np.sin(thetadef)*(x0-xf) + airfoil_upper(xf)*np.cos(thetadef) + np.sqrt( R**2 - np.cos(thetadef)**2 * (xf + x0)**2 + 2*airfoil_upper(xf)*np.sin(thetadef)*np.cos(thetadef)*(x0-xf)- airfoil_upper(xf)**2 * np.sin(thetadef)**2) #may not be necessary
+xint = xf - si*np.sin(thetadef) #intersection point in x
+yint = np.absolute(-airfoil_upper(xf) - si*np.cos(thetadef)) #intersection point in y
 
+
+#yi = np.sqrt(R**2 - (xf -x0)**2) #absolute value of y that intersects vertical line from airfoil to circle
+ 
 ###############################
 #   BOUNDARY MAPS:
 ###############################
@@ -56,12 +68,12 @@ def gamma_14(xi):
     return 0.5*(1+xmax+xi*(1-xmax)) , 0
 
 #Second element: (DONE)
-def gamma_21(eta):
-    return xf , 0.5*( (airfoil_upper(xf) - yi)*eta - airfoil_upper(xf)-yi )
+def gamma_21(eta): #altered
+    return (xf+xint)/2 + eta*(xint-xf)/2 , 0.5*( (-yint-airfoil_lower(xf))*eta + -yint+airfoil_lower(xf) )
 
 def gamma_22(xi):
     theta1 = theta(xc,-yrekt)
-    theta2 = theta(xf,-yi)
+    theta2 = theta(xint,-yint)
     return outer_circle( (theta2-theta1)/2*xi + (theta2+theta1)/2)
 
 def gamma_23(eta):
@@ -76,7 +88,7 @@ def gamma_31(eta):
 
 def gamma_32(xi):
     theta2 = np.pi
-    theta1 = theta(xf,-yi)
+    theta1 = theta(xint,-yint)
     return outer_circle( (theta2-theta1)/2*xi + (theta2+theta1)/2)
 
 def gamma_33(eta):
@@ -87,11 +99,11 @@ def gamma_34(xi):
 
 #Fourth element: (DONE)
 def gamma_41(eta):
-    return xf , 0.5*( (-airfoil_upper(xf) + yi)*eta + airfoil_upper(xf)+yi ) 
+    return (xf+xint)/2 + eta*(xint-xf)/2 , 0.5*( (yint-airfoil_upper(xf))*eta + yint+airfoil_upper(xf) )
  
-def gamma_42(xi):
-    theta1 = np.pi
-    theta2 = theta(xf,yi)+np.pi
+def gamma_42(xi): #shit is fucked
+    theta1 = 0+np.pi
+    theta2 = 2*np.pi-theta(xint,yint)
     return outer_circle( (theta2-theta1)/2*xi + (theta2+theta1)/2)
 
 def gamma_43(eta):
@@ -104,9 +116,9 @@ def gamma_44(xi):
 def gamma_51(eta):
     return (xc+1)/2 + eta*(xc-1)/2 , yrekt/2*(1+eta)
 
-def gamma_52(xi):
-    theta2 = theta(xc,yrekt) +np.pi/2
-    theta1 = theta(xf,yi) +np.pi/2
+def gamma_52(xi): #shit is fucked no more
+    theta2 = theta(xc,yrekt)+np.pi
+    theta1 = theta(xint,yint)+np.pi
     return outer_circle( (theta2-theta1)/2*xi + (theta2+theta1)/2)
 
 def gamma_53(eta):
@@ -131,8 +143,8 @@ def gamma_64(xi):
 ###########################################
 
 #Order of GLL-points:
-nx = 5
-ny = 10
+nx = gllx
+ny = ratio*nx
 xis = qn.GLL_points(nx)
 etas = qn.GLL_points(ny)
 
