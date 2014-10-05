@@ -24,7 +24,7 @@ def G_matrix(xD, xTD, yD, yTD, alpha, beta):
     y_eta = yTD[alpha, beta]
 
     #Determining the Jacobian:
-    J = x_xi*y_eta - x_eta*y_xi
+    J = np.abs(x_xi*y_eta - x_eta*y_xi)
 
     return J, 1./J * np.array( [ [x_eta**2 + y_eta**2, -(y_eta*y_xi + x_eta*x_xi)],
             [-(y_eta*y_xi + x_eta*x_xi), x_xi**2+y_xi**2] ])
@@ -135,6 +135,6 @@ def assemble_loading_vector(X, Y, f, Jac, weights):
     for I in range(num_points):
         i = I/N
         j = I%N
-        F[I] += weights[i]*weights[j]*f(X[i,j],Y[i,j])*Jac[i]
+        F[I] += weights[i]*weights[j]*f(X[i,j],Y[i,j])*Jac[I]
 
     return F
