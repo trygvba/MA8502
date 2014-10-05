@@ -24,7 +24,7 @@ def G_matrix(xD, xTD, yD, yTD, alpha, beta):
     y_eta = yTD[alpha, beta]
 
     #Determining the Jacobian:
-    J = x_xi*y_eta - x_eta*y_xt 
+    J = x_xi*y_eta - x_eta*y_xi
 
     return J, 1./J * np.array( [ [x_eta**2 + y_eta**2, -(y_eta*y_xi + x_eta*x_xi)],
             [-(y_eta*y_xi + x_eta*x_xi), x_xi**2+y_xi**2] ])
