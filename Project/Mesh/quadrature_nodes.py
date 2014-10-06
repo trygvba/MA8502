@@ -56,7 +56,7 @@ def GL_points_and_weights(n):
 def GLL_points(n):
     """Calculates the GLL nodes and weights.
     """
-    tol = 10.**(-8)
+    tol = 10.**(-12)
 
     p = np.zeros(n)
     p[0] = -1.
