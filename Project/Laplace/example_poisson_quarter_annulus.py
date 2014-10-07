@@ -16,43 +16,43 @@ import matplotlib.pyplot as plt
 ###########################
 #   MAPPINGS:
 ###########################
-#def gamma1(eta):
-#    theta = np.pi/4.*(eta+1)
-#    return 2.*np.cos(theta), 2.*np.sin(theta)
-
-#def gamma2(xi):
-#    return 0., 0.5*(3.+xi)
-
-#def gamma3(eta):
-#    theta = np.pi/4.*(eta+1)
-#    return np.cos(theta), np.sin(theta)
-
-#def gamma4(xi):
-#    return 0.5*(3.+xi), 0.
-
-#def f(x,y):
-#    return 1.
-
-#Boundary maps for a circle:
 def gamma1(eta):
-    theta = np.pi/4.*(eta+1.)
-    return np.cos(theta), np.sin(theta)
+    theta = np.pi/4.*(eta+1)
+    return 2.*np.cos(theta), 2.*np.sin(theta)
 
 def gamma2(xi):
-    theta = np.pi/4.*(3.-xi)
-    return np.cos(theta), np.sin(theta)
+    return 0., 0.5*(3.+xi)
 
 def gamma3(eta):
-    theta = np.pi/4.*(5.-eta)
+    theta = np.pi/4.*(eta+1)
     return np.cos(theta), np.sin(theta)
 
 def gamma4(xi):
-    theta = np.pi/4.*(7.+xi)
-    return np.cos(theta), np.sin(theta)
+    return 0.5*(3.+xi), 0.
 
 def f(x,y):
-    r2 = x**2+y**2
-    return -8.*np.pi*np.cos(2*np.pi*r2) + 16.*np.pi**2*r2*np.sin(2*np.pi*r2)
+    return 1.
+
+#Boundary maps for a circle:
+#def gamma1(eta):
+#    theta = np.pi/4.*(eta+1.)
+#    return np.cos(theta), np.sin(theta)
+
+#def gamma2(xi):
+#    theta = np.pi/4.*(3.-xi)
+#    return np.cos(theta), np.sin(theta)
+
+#def gamma3(eta):
+#    theta = np.pi/4.*(5.-eta)
+#    return np.cos(theta), np.sin(theta)
+
+#def gamma4(xi):
+#    theta = np.pi/4.*(7.+xi)
+#    return np.cos(theta), np.sin(theta)
+
+#def f(x,y):
+#    r2 = x**2+y**2
+#    return -8.*np.pi*np.cos(2*np.pi*r2) + 16.*np.pi**2*r2*np.sin(2*np.pi*r2)
 
 ###########################
 # Order of GLL-points:
