@@ -68,8 +68,6 @@ def calculate_local_stiffness_element( I, J, D, G_tot, weights,N ):
     OUTPUT:
         A_K[I,J]: Element of the local stiffness matrix.
     """
-    # Number of GLL-points:
-    #N = len(weights)
 
     # Get x- and y- indices:
     i = I%N
@@ -108,7 +106,6 @@ def assemble_local_stiffness_matrix(D, G_tot, N, weights):
     # Initialise local stiffness matrix:
     num_points = N**2
     A_K = np.zeros( (num_points, num_points) )
-    N = len(weights)
 
     for I in range(num_points):
         for J in range(I+1):

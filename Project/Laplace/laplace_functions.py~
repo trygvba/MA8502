@@ -48,8 +48,8 @@ def assemble_total_G_matrix(xD, xTD, yD, yTD, nx, ny):
     Jac = np.zeros( num_points )
 
     for I in range(num_points):
-        i = I/nx
-        j = I%nx
+        i = I%nx
+        j = I/nx
         Jac[I], G[I] = G_matrix(xD, xTD, yD, yTD, i, j)
 
     return Jac, G
@@ -108,7 +108,6 @@ def assemble_local_stiffness_matrix(D, G_tot, N, weights):
     # Initialise local stiffness matrix:
     num_points = N**2
     A_K = np.zeros( (num_points, num_points) )
-    N = len(weights)
 
     for I in range(num_points):
         for J in range(I+1):
