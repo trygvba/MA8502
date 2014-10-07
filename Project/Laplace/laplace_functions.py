@@ -48,8 +48,8 @@ def assemble_total_G_matrix(xD, xTD, yD, yTD, nx, ny):
     Jac = np.zeros( num_points )
 
     for I in range(num_points):
-        i = I/nx
-        j = I%nx
+        i = I%nx
+        j = I/nx
         Jac[I], G[I] = G_matrix(xD, xTD, yD, yTD, i, j)
 
     return Jac, G
