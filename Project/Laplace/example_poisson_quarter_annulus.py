@@ -122,7 +122,7 @@ U = np.reshape ( U, (N,N) )
 ############################
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot_wireframe(X, Y, U-np.sin(2*np.pi*(X**2 + Y**2)))
+ax.plot_wireframe(X, Y, U)#-np.sin(2*np.pi*(X**2 + Y**2)))
 
 plt.show()
 
