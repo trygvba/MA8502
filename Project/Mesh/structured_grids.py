@@ -149,7 +149,7 @@ def local_to_global_matrix( idim, jdim, n, patch=False, patch_elements=0):
     return G
 
 
-def local_to_global_top_down(idim, jdim, nx, ny):
+def local_to_global_top_down(idim, jdim, nx, ny, patch=False, num_patch=0):
     """ Similar to local_to_global, only now the data structure
     makes it easier to plot the resulting grid.
 
@@ -157,6 +157,8 @@ def local_to_global_top_down(idim, jdim, nx, ny):
         idim: Number of points in the x-direction.
         jdim: Number of points in the y-direction.
         nx, ny: Number of GLL-points for each dimension and element.
+        patch: Boolean signifying whether some elements should be patched.
+        num_patch: If patch=True, how many?
     OUTPUT:
         G: Local-to-global matrix.
     """
@@ -175,7 +177,23 @@ def local_to_global_top_down(idim, jdim, nx, ny):
 
     tot_points = np_x * np_y
     
-    grid_indices = np.arange(tot_points).reshape ( (np_y, np_x) )
+    #If Patching is done, things are a bit more complicated:
+    if (patch):
+        grid_indices = -1*np.ones( (np_y, np_x) )
+        patch_points = num_patch*(nx-1) + 1
+        index = 0
+        for k in range(tot_points):
+            j = k%np_x
+            i = k/np_x
+            if (grid_indices[i,j] < 0):
+                grid_indices[i,j] = index
+                index += 1
+
+                if (k<patch_points):
+                    grid_indices[i,np_x-1-j] = grid_indices[i,j]
+    #Now to the easier case:
+    else:
+        grid_indices = np.arange(tot_points).reshape ( (np_y, np_x) )
 
     #Now we need to unravel this matrix and put it correctly into out G-matrix:
     G = np.zeros( (num_el, nx*ny), dtype='uint32' )
