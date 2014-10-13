@@ -62,3 +62,46 @@ def gordon_hall_grid(gamma1, gamma2, gamma3, gamma4, xis, etas):
     Y = yA + yB - yC
     return X, Y
 
+
+def gordon_hall_straight_line(i,j, X_glob, Y_glob, xis, N):
+    """Implementation for the Gordon-Hall algorithm, where the
+    boundary mappings are assumed to be straight lines, i.e. a simpler case.
+    INPUT:
+        i,j: Indices for one corner point of the four-sided shape.
+            Note that i corresponds to the y-dimension.
+        X_glob, Y_glob: Global coordinate matrices.
+        xis: GLL-nodes.
+        N: Number of GLL-points.
+    OUTPUT:
+        X_loc, Y_loc: Local coordinate matrices.
+    """
+    # Initialise the matrices:
+    X_loc = np.zeros( (N,N) )
+    Y_loc = np.zeros( (N,N) )
+
+    #Put in the corner points:
+    X_loc[0,0] = X_glob[i,j]
+    Y_loc[0,0] = Y_glob[i,j]
+
+    X_loc[0,-1] = X_glob[i,j+1]
+    Y_loc[0,-1] = Y_glob[i,j+1]
+
+    X_loc[-1,0] = X_glob[i+1,j]
+    Y_loc[-1,0] = Y_glob[i+1,j]
+
+    X_loc[-1,-1] = X_glob[i+1,j+1]
+    Y_loc[-1,-1] = Y_glob[i+1,j+1]
+
+    #Interpolate the corner points:
+    X_loc[0] = X_loc[0,0]*(1-xis)/2. + X_loc[0,-1]*(1-xis)/2.
+    Y_loc[0] = Y_loc[0,0]*(1-xis)/2. + Y_loc[0,-1]*(1-xis)/2.
+
+    X_loc[-1] = X_loc[-1,0]*(1-xis)/2. + X_loc[-1,-1]*(1+xis)/2.
+    Y_loc[-1] = Y_loc[-1,0]*(1-xis)/2. + Y_loc[-1,-1]*(1+xis)/2.
+
+    for k in range(N):
+        X_loc[:,k] = X_loc[0,k]*(1-xis)/2. + X_loc[-1,k]*(1+xis)/2.
+        Y_loc[:,k] = Y_loc[0,k]*(1-xis)/2. + Y_loc[-1,k]*(1+xis)/2.
+
+    return X_loc, Y_loc
+        
