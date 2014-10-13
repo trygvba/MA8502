@@ -190,3 +190,38 @@ def local_to_global_top_down(idim, jdim, nx, ny):
 
     return G
 
+
+
+############################################
+#   FUNCTIONS FOR THE NASA-GRID:
+###########################################
+
+
+def read_PLOT3D(filename):
+    """Function for reading the PLOT3D-files provided
+    in the project description, and returning the
+    coordinate matrices X and Y
+    """
+
+    #Opening file and preliminary parameter retrieval:
+    fid = open(filename,'r')
+    nbl = int(fid.realine() )   #Number of blocks.
+    line = fid.readline().split()
+    idim = int(line[0])         #Points in x-direction.
+    jdim = int(line[1])         #Points in y-direction.
+
+
+    num_points = idim * jdim
+    #Initialise data array:
+    data = np.zeros( 2*num_points )
+    #Retrieve points information:
+    for i in range(2*num_points):
+        if (i%3 == 0):
+            line = fid.readline().split()
+        data[i] = float( line[i%3] )
+
+    #Close file
+    fid.close()
+    #                   X                                           Y
+    return data[:num_points].reshape( (jdim,idim) ), data[num_points:].reshape( (jdim, idim) )
+
