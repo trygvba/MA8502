@@ -111,7 +111,7 @@ xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N, xis)
 
 #Local to global matrix:
-G = sg.local_to_global_top_down(7, 2, N, N)
+Local_to_global = sg.local_to_global_top_down(7, 2, N, N)
 
 # Dimensions of resulting matrix: (need to change)
 ydim = N
@@ -157,7 +157,7 @@ print "Getting derivative matrix..."
 D = sg.diff_matrix(xis, N)
 ###############################THIS MARKS THE POINT WHERE I LITERALLY COULDN'T
 
-# Get Jacobian and total G-matrix:
+# Get Jacobian and total G-matrix (This should be done for each element):
 print "Getting Jacobian and G-matrices."
 Jac, G_tot = lp.assemble_total_G_matrix(np.dot(X,D),
                                         np.dot(X.T,D),
@@ -175,6 +175,14 @@ A5 = lp.assemble_local_stiffness_matrix(D, G_tot5, N, weights)
 A6 = lp.assemble_local_stiffness_matrix(D, G_tot6, N, weights)
 
 ###Now need a crafty Jew to assemble the global stiffness matrix A
+#Using the Local_to_global mapping to insert at the right place:
+A[np.ix_(Local_to_global[0])] = A1
+A[np.ix_(Local_to_global[1])] = A2
+A[np.ix_(Local_to_global[2])] = A3
+A[np.ix_(Local_to_global[3])] = A4
+A[np.ix_(Local_to_global[4])] = A5
+A[np.ix_(Local_to_global[5])] = A6
+# Your Crafty Jew has arrived.
 
 ###
 # Assemble loading vector:
@@ -187,6 +195,13 @@ F5 = lp.assemble_loading_vector(X5, Y5, f, Jac5, weights)
 F6 = lp.assemble_loading_vector(X6, Y6, f, Jac6, weights)
 
 ###Now also need a crafty Jew to assemble the global loading vector F
+#Same here:
+F[Local_to_global[0]] = F1
+F[Local_to_global[1]] = F2
+F[Local_to_global[2]] = F3
+F[Local_to_global[3]] = F4
+F[Local_to_global[4]] = F5
+F[Local_to_global[5]] = F6
 
 
 
