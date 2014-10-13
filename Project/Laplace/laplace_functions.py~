@@ -68,8 +68,6 @@ def calculate_local_stiffness_element( I, J, D, G_tot, weights,N ):
     OUTPUT:
         A_K[I,J]: Element of the local stiffness matrix.
     """
-    # Number of GLL-points:
-    #N = len(weights)
 
     # Get x- and y- indices:
     i = I%N
@@ -92,6 +90,7 @@ def calculate_local_stiffness_element( I, J, D, G_tot, weights,N ):
             A += weights[k]*weights[beta]*D[j,beta]*D[l,beta]*G_tot[beta*N+k,1,1]
 
     return A
+
 
 def assemble_local_stiffness_matrix(D, G_tot, N, weights):
     """ Function for assembling the local stiffness matrix for one element
@@ -138,3 +137,58 @@ def assemble_loading_vector(X, Y, f, Jac, weights):
         F[I] += weights[i]*weights[j]*f(X[i,j],Y[i,j])*Jac[I]
 
     return F
+    
+    
+    #THIS FUNCTION MAY BE BULLSHIT
+def calculate_local_stiffness_element2( I, J, D_x,D_y, G_tot, weights_x,weights_y,Nx,Ny ):
+    """ Function for calculating the I,J element of the LOCAL
+    stiffness matrix. Later to be assembled with the larger global
+    stiffness matrix.
+    INPUT:
+        I,J: Local indices.
+        D: Lagrangian derivative matrix.
+        G_tot: G-matrices for all points.
+        weights: GLL_weights.
+
+    OUTPUT:
+        A_K[I,J]: Element of the local stiffness matrix.
+    """
+
+    # Get x- and y- indices:
+    i = I%Nx
+    j = I/Ny
+
+    k = J%Nx
+    l = J/Ny
+
+    #Initialise value:
+    A = 0.
+    #THIS ESPECIALLY MIGHT BE FULL OF SHIT
+    A += weights_x[i]*weights_y[l]*D_y[j,l]*D_x[k,i]*G_tot[l*Ny+i,1,0]
+    A += weights_x[k]*weights_y[j]*D_y[l,j]*D_x[i,k]*G_tot[j*Ny+k,0,1]
+    
+    if (j==l):
+        for alpha in range(Nx):
+            A += weights_x[alpha]*weights_y[l]*D_x[k,alpha]*D_y[i,alpha]*G_tot[l*Ny+alpha, 0, 0]
+
+    if (i == k):
+        for beta in range(Ny):
+            A += weights_x[k]*weights_y[beta]*D_x[j,beta]*D_y[l,beta]*G_tot[beta*Ny+k,1,1]
+
+    return A
+
+#THIS MIGHT BE TOTAL BOLLOCKS
+def assemble_local_stiffness_matrix2(Dx,Dy, G_tot, Nx,Ny, weightsx,weightsy):
+
+    # Initialise local stiffness matrix:
+    num_points = Nx*Ny
+    A_K = np.zeros( (num_points, num_points) )
+
+    for I in range(num_points):
+        for J in range(I+1):
+            A_K[I,J] += calculate_local_stiffness_element2(I, J, Dx, Dy, G_tot, weightsx,weightsy,Nx,Ny)
+            #if (J < I):
+            #    A_K[J,I] = A_K[I,J]
+
+    return A_K + A_K.T - np.diag(A_K.diagonal())
+
