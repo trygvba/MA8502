@@ -179,22 +179,12 @@ A5 = lp.assemble_local_stiffness_matrix(D, G_tot5, N, weights)
 A6 = lp.assemble_local_stiffness_matrix(D, G_tot6, N, weights)
 
 
-def assemble_local_stiffness_matrix2(Dx,Dy, G_tot, Nx,Ny, weightsx,weightsy):
-
+#def assemble_local_stiffness_matrix2(Dx,Dy, G_tot, Nx,Ny, weightsx,weightsy):
+    ##Dafuq? Functions like this you should put in another folder.
 ###Now need a crafty Jew to assemble the global stiffness matrix A
 
-Address = local_to_global_top_down(idim, jdim, nx, ny):
-    """ Similar to local_to_global, only now the data structure
-    makes it easier to plot the resulting grid.
+Address = local_to_global_top_down(7, 2, Nx, Ny, patch=True, num_pacht=1)
 
-    INPUT:
-        idim: Number of points in the x-direction.
-        jdim: Number of points in the y-direction.
-        nx, ny: Number of GLL-points for each dimension and element.
-    OUTPUT:
-        G: Local-to-global matrix.
-    """
-    
 
 ###
 # Assemble loading vector:
