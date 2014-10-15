@@ -14,6 +14,46 @@ import time as time
 
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
+
+###############################
+# PRELIMINARY DATA
+###############################
+##mesh inputs
+thetadef = 30 #angle between elements 3,4 etc
+
+#constants
+R = 507.79956092981
+yrekt = 493.522687570593
+xmax = 501.000007802345
+xmin = -484.456616747519
+dx = 0.001
+xf = 0.2971739920760934289144667697 #x-value where f(x) has its max
+##angle from xf to define elements 3 and 4 (in radians)
+
+
+thetadef = thetadef*np.pi/180
+
+#Global functions:
+def outer_circle(theta):
+    return R*np.cos(theta)+x0, -R*np.sin(theta)
+
+def airfoil_upper(x):
+    return 0.594689181*(0.298222773*np.sqrt(x) - 0.127125232*x - 0.357907906*x**2 + 0.291984971*x**3 - 0.105174606*x**4)
+
+def airfoil_lower(x):
+    return -0.594689181*(0.298222773*np.sqrt(x) - 0.127125232*x - 0.357907906*x**2 + 0.291984971*x**3 - 0.105174606*x**4)
+
+def theta(x,y):
+    return np.arccos((x-x0)/np.sqrt((x-x0)**2+y**2))
+
+#crunch
+x0 = R+xmin #origin of semicircle shape
+xc = x0 + np.sqrt(R**2-yrekt**2) #intersection point in x; associated with yrekt
+si = np.sin(thetadef)*(x0-xf) + airfoil_lower(xf)*np.cos(thetadef) + np.sqrt( R**2 - np.cos(thetadef)**2 * (xf + x0)**2 + 2*airfoil_lower(xf)*np.sin(thetadef)*np.cos(thetadef)*(xf-x0)- airfoil_lower(xf)**2 * np.sin(thetadef)**2)
+#siupper = np.sin(thetadef)*(x0-xf) + airfoil_upper(xf)*np.cos(thetadef) + np.sqrt( R**2 - np.cos(thetadef)**2 * (xf + x0)**2 + 2*airfoil_upper(xf)*np.sin(thetadef)*np.cos(thetadef)*(x0-xf)- airfoil_upper(xf)**2 * np.sin(thetadef)**2) #may not be necessary
+xint = xf - si*np.sin(thetadef) #intersection point in x
+yint = np.absolute(-airfoil_upper(xf) - si*np.cos(thetadef)) #intersection point in y
+
 ###############################
 #   BOUNDARY MAPS:
 ###############################
@@ -106,16 +146,16 @@ def gamma_64(xi):
 
 ###########################
 # Order of GLL-points:
-N = 100
+N = 10
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N, xis)
 
 #Local to global matrix:
 Local_to_global = sg.local_to_global_top_down(7, 2, N, N)
 
-# Dimensions of resulting matrix: (need to change)
+# Dimensions of resulting matrix: (not really sure how these go)
 ydim = N
-xdim = (N-1)*6+1
+xdim = N
 
 #Total number of points:
 tot_points = N*N
@@ -130,39 +170,68 @@ t1 = time.time()
 #Generate mesh:
 print "Getting Mesh..."
 X1, Y1 = gh.gordon_hall_grid( gamma_11, gamma_12, gamma_13, gamma_14, xis, xis)
-X[G[0]] = xtemp.ravel()
-Y[G[0]] = ytemp.ravel()
 X2, Y2 = gh.gordon_hall_grid( gamma_21, gamma_22, gamma_23, gamma_24, xis, xis)
-X[G[1]] = xtemp.ravel()
-Y[G[1]] = ytemp.ravel()
 X3, Y3 = gh.gordon_hall_grid( gamma_31, gamma_32, gamma_33, gamma_34, xis, xis)
-X[G[2]] = xtemp.ravel()
-Y[G[2]] = ytemp.ravel()
 X4, Y4 = gh.gordon_hall_grid( gamma_41, gamma_42, gamma_43, gamma_44, xis, xis)
-X[G[3]] = xtemp.ravel()
-Y[G[3]] = ytemp.ravel()
 X5, Y5 = gh.gordon_hall_grid( gamma_51, gamma_52, gamma_53, gamma_54, xis, xis)
-X[G[4]] = xtemp.ravel()
-Y[G[4]] = ytemp.ravel()
 X6, Y6 = gh.gordon_hall_grid( gamma_61, gamma_62, gamma_63, gamma_64, xis, xis)
-X[G[5]] = xtemp.ravel()
-Y[G[5]] = ytemp.ravel()
 
 #Reshape the coordinate vector:
-X = X.reshape( (ydim, xdim) )
-Y = Y.reshape( (ydim, xdim) )
+X1 = X1.reshape( (ydim, xdim) )
+Y1 = Y1.reshape( (ydim, xdim) )
+X2 = X2.reshape( (ydim, xdim) )
+Y2 = Y2.reshape( (ydim, xdim) )
+X3 = X3.reshape( (ydim, xdim) )
+Y3 = Y3.reshape( (ydim, xdim) )
+X4 = X4.reshape( (ydim, xdim) )
+Y4 = Y4.reshape( (ydim, xdim) )
+X5 = X5.reshape( (ydim, xdim) )
+Y5 = Y5.reshape( (ydim, xdim) )
+X6 = X6.reshape( (ydim, xdim) )
+Y6 = Y6.reshape( (ydim, xdim) )
 
 # Get lagrangian derivative matrix:
 print "Getting derivative matrix..."
 D = sg.diff_matrix(xis, N)
+
 ###############################THIS MARKS THE POINT WHERE I LITERALLY COULDN'T
 
 # Get Jacobian and total G-matrix (This should be done for each element):
 print "Getting Jacobian and G-matrices."
-Jac, G_tot = lp.assemble_total_G_matrix(np.dot(X,D),
-                                        np.dot(X.T,D),
-                                        np.dot(Y,D),
-                                        np.dot(Y.T,D),
+Jac1, G_tot1 = lp.assemble_total_G_matrix(np.dot(X1,D),
+                                        np.dot(X1.T,D),
+                                        np.dot(Y1,D),
+                                        np.dot(Y1.T,D),
+                                        N,
+                                        N)
+Jac2, G_tot2 = lp.assemble_total_G_matrix(np.dot(X2,D),
+                                        np.dot(X2.T,D),
+                                        np.dot(Y2,D),
+                                        np.dot(Y2.T,D),
+                                        N,
+                                        N)
+Jac3, G_tot3 = lp.assemble_total_G_matrix(np.dot(X3,D),
+                                        np.dot(X3.T,D),
+                                        np.dot(Y3,D),
+                                        np.dot(Y3.T,D),
+                                        N,
+                                        N)
+Jac4, G_tot4 = lp.assemble_total_G_matrix(np.dot(X4,D),
+                                        np.dot(X4.T,D),
+                                        np.dot(Y4,D),
+                                        np.dot(Y4.T,D),
+                                        N,
+                                        N)
+Jac5, G_tot5 = lp.assemble_total_G_matrix(np.dot(X5,D),
+                                        np.dot(X5.T,D),
+                                        np.dot(Y5,D),
+                                        np.dot(Y5.T,D),
+                                        N,
+                                        N)
+Jac6, G_tot6 = lp.assemble_total_G_matrix(np.dot(X6,D),
+                                        np.dot(X6.T,D),
+                                        np.dot(Y6,D),
+                                        np.dot(Y6.T,D),
                                         N,
                                         N)
                                         
@@ -176,7 +245,13 @@ A6 = lp.assemble_local_stiffness_matrix(D, G_tot6, N, weights)
 
 ###Now need a crafty Jew to assemble the global stiffness matrix A
 #Using the Local_to_global mapping to insert at the right place:
-A[np.ix_(Local_to_global[0])] = A1
+A = np.zeros((6*tot_points,6*tot_points))#initialise the cumdumpster
+print A.shape
+print A1.shape
+print type(np.ix_(Local_to_global[0])[0])			
+###########################################line of fuckups beyond this line beyond this line beyond this line
+#error reads: "array is not broadcastable to correct shape"
+A[np.ix_(Local_to_global[0])[0]] = A1
 A[np.ix_(Local_to_global[1])] = A2
 A[np.ix_(Local_to_global[2])] = A3
 A[np.ix_(Local_to_global[3])] = A4
