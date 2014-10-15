@@ -148,12 +148,12 @@ def gamma_64(xi):
 #       LOADING FUNCTION:
 ######################################
 def loadfunc(x,y):
-    return -1.
+    return 0.
 
 
 ###########################
 # Order of GLL-points:
-N = 10
+N = 20
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N, xis)
 
@@ -285,7 +285,42 @@ F[Local_to_global[3]] += F4
 F[Local_to_global[4]] += F5
 F[Local_to_global[5]] += F6
 
+#########################################
+#       BOUNDARY CONDITIONS:
+#########################################
 
+# I will try having zero Dirichlet on the outer boundary
+# and 1 at the airfoil.
+
+# This corresponds to the upper part of each element, and lower
+# part of all but the first and last element. In addition the left
+# part of the first, and the right part of the last must be handled.
+
+# Upper part:
+for k in range(6):
+    indices = Local_to_global[k,-N:]
+    A[indices] = 0.
+    F[indices] = 0.
+    A[indices,indices] = 1.
+
+# Lower part:
+for k in range(1,5):
+    indices = Local_to_global[k,:N]
+    A[indices] = 0.
+    F[indices] = 1.
+    A[indices, indices] = 1.
+
+#Left part of the first element:
+indices = Local_to_global[0,::N]
+A[indices] = 0.
+F[indices] = 0.
+A[indices,indices] = 1.
+
+# Right part of the last element:
+indices = Local_to_global[-1, N-1 + N*np.arange(N)]
+A[indices] = 0.
+F[indices] = 0.
+A[indices, indices] = 1.
 #####################
 #   SOLVE:
 #####################
