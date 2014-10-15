@@ -144,6 +144,13 @@ def gamma_63(eta):
 def gamma_64(xi):
     return 0.5*(1+xmax+xi*(xmax-1)) , 0
 
+######################################
+#       LOADING FUNCTION:
+######################################
+def loadfunc(x,y):
+    return -1.
+
+
 ###########################
 # Order of GLL-points:
 N = 10
@@ -151,7 +158,8 @@ xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N, xis)
 
 #Local to global matrix:
-Local_to_global = sg.local_to_global_top_down(7, 2, N, N)
+Local_to_global = sg.local_to_global_top_down(7, 2, N, N, patch=True, num_patch=1)
+dofs = np.max(Local_to_global)+1
 
 # Dimensions of resulting matrix: (not really sure how these go)
 ydim = N
@@ -245,38 +253,37 @@ A6 = lp.assemble_local_stiffness_matrix(D, G_tot6, N, weights)
 
 ###Now need a crafty Jew to assemble the global stiffness matrix A
 #Using the Local_to_global mapping to insert at the right place:
-A = np.zeros((6*tot_points,6*tot_points))#initialise the cumdumpster
-print A.shape
-print A1.shape
-print type(np.ix_(Local_to_global[0])[0])			
+A = np.zeros((dofs, dofs))#initialise the cumdumpster
+
 ###########################################line of fuckups beyond this line beyond this line beyond this line
 #error reads: "array is not broadcastable to correct shape"
-A[np.ix_(Local_to_global[0])[0]] = A1
-A[np.ix_(Local_to_global[1])] = A2
-A[np.ix_(Local_to_global[2])] = A3
-A[np.ix_(Local_to_global[3])] = A4
-A[np.ix_(Local_to_global[4])] = A5
-A[np.ix_(Local_to_global[5])] = A6
+A[np.ix_(Local_to_global[0], Local_to_global[0]) ] += A1
+A[np.ix_(Local_to_global[1], Local_to_global[1]) ] += A2
+A[np.ix_(Local_to_global[2], Local_to_global[2]) ] += A3
+A[np.ix_(Local_to_global[3], Local_to_global[3]) ] += A4
+A[np.ix_(Local_to_global[4], Local_to_global[4]) ] += A5
+A[np.ix_(Local_to_global[5], Local_to_global[5]) ] += A6
 # Your Crafty Jew has arrived.
 
 ###
 # Assemble loading vector:
 print "Assembling loading vector."
-F1 = lp.assemble_loading_vector(X1, Y1, f, Jac1, weights)
-F2 = lp.assemble_loading_vector(X2, Y2, f, Jac2, weights)
-F3 = lp.assemble_loading_vector(X3, Y3, f, Jac3, weights)
-F4 = lp.assemble_loading_vector(X4, Y4, f, Jac4, weights)
-F5 = lp.assemble_loading_vector(X5, Y5, f, Jac5, weights)
-F6 = lp.assemble_loading_vector(X6, Y6, f, Jac6, weights)
+F1 = lp.assemble_loading_vector(X1, Y1, loadfunc, Jac1, weights)
+F2 = lp.assemble_loading_vector(X2, Y2, loadfunc, Jac2, weights)
+F3 = lp.assemble_loading_vector(X3, Y3, loadfunc, Jac3, weights)
+F4 = lp.assemble_loading_vector(X4, Y4, loadfunc, Jac4, weights)
+F5 = lp.assemble_loading_vector(X5, Y5, loadfunc, Jac5, weights)
+F6 = lp.assemble_loading_vector(X6, Y6, loadfunc, Jac6, weights)
 
 ###Now also need a crafty Jew to assemble the global loading vector F
 #Same here:
-F[Local_to_global[0]] = F1
-F[Local_to_global[1]] = F2
-F[Local_to_global[2]] = F3
-F[Local_to_global[3]] = F4
-F[Local_to_global[4]] = F5
-F[Local_to_global[5]] = F6
+F = np.zeros( dofs )
+F[Local_to_global[0]] += F1
+F[Local_to_global[1]] += F2
+F[Local_to_global[2]] += F3
+F[Local_to_global[3]] += F4
+F[Local_to_global[4]] += F5
+F[Local_to_global[5]] += F6
 
 
 
