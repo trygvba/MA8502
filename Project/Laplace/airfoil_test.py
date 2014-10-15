@@ -286,10 +286,27 @@ F[Local_to_global[4]] += F5
 F[Local_to_global[5]] += F6
 
 
+#####################
+#   SOLVE:
+#####################
+U = la.solve(A,F)
+
+##########################################
+#       TRYING TO PLOT:
+##########################################
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+ax.plot_wireframe(X1,Y1, U[Local_to_global[0]].reshape( (N,N) ))
+ax.plot_wireframe(X2,Y2, U[Local_to_global[1]].reshape( (N,N) ))
+ax.plot_wireframe(X3,Y3, U[Local_to_global[2]].reshape( (N,N) ))
+ax.plot_wireframe(X4,Y4, U[Local_to_global[3]].reshape( (N,N) ))
+ax.plot_wireframe(X5,Y5, U[Local_to_global[4]].reshape( (N,N) ))
+ax.plot_wireframe(X6,Y6, U[Local_to_global[5]].reshape( (N,N) ))
 
 
 
-
+plt.show()
 
 
 
