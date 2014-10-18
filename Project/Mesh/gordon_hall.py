@@ -93,8 +93,8 @@ def gordon_hall_straight_line(i,j, X_glob, Y_glob, xis, N):
     Y_loc[-1,-1] = Y_glob[i+1,j+1]
 
     #Interpolate the corner points:
-    X_loc[0] = X_loc[0,0]*(1-xis)/2. + X_loc[0,-1]*(1-xis)/2.
-    Y_loc[0] = Y_loc[0,0]*(1-xis)/2. + Y_loc[0,-1]*(1-xis)/2.
+    X_loc[0] = X_loc[0,0]*(1-xis)/2. + X_loc[0,-1]*(1+xis)/2.
+    Y_loc[0] = Y_loc[0,0]*(1-xis)/2. + Y_loc[0,-1]*(1+xis)/2.
 
     X_loc[-1] = X_loc[-1,0]*(1-xis)/2. + X_loc[-1,-1]*(1+xis)/2.
     Y_loc[-1] = Y_loc[-1,0]*(1-xis)/2. + Y_loc[-1,-1]*(1+xis)/2.
