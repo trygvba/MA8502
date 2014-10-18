@@ -28,7 +28,7 @@ def loadfunc1(x,y):
     return 0.
 
 def loadfunc2(x,y):
-    return 1.
+    return 0.
 
 
 ######################################
@@ -78,10 +78,10 @@ F[:tot_points] = lp.assemble_loading_vector(X, Y, loadfunc2, Jac, weights)
 
 v = np.zeros( 2*tot_points )
 def v1(x,y):
-    return -y*(1.-x**2)
+    return -y*(1-x**2)
 
 def v2(x,y):
-    return x*(1.-y**2)
+    return x*(1-y**2)
 #############################
 v[:tot_points] = v1(X,Y).ravel()
 v[tot_points:] = v2(X,Y).ravel()
@@ -92,13 +92,13 @@ C = cf.assemble_convection_matrix(v, X_xi, X_eta, Y_xi, Y_eta, D, N, weights)
 #       BOUNDARY CONDITIONS:
 ###############################################
 
-S = C+A
+S = C
 
 # Lower side:
 for I in range(N):
     S[I] = 0.
     S[I,I] = 1.
-    F[I] = 0.
+    F[I] = -0.5
     S[I+tot_points] = 0.
     S[I+tot_points,I+tot_points] = 1.
     F[I+tot_points] = 1.
@@ -142,6 +142,7 @@ u = la.solve(S,F)
 ############################
 #   PLOTTING:
 ############################
+
 plt.quiver(X,Y, u[:tot_points].reshape((N,N)), u[tot_points:].reshape((N,N)))
 plt.show()
 
