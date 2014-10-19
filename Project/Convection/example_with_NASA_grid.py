@@ -51,7 +51,7 @@ Ny = jdim -1
 patches = sg.get_number_of_patch_elements(X_el, Y_el, idim)
 
 # Number of GLL-points:
-N = 3
+N = 2
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N,xis)
 
@@ -162,19 +162,23 @@ for i in range(Nx):
     F[indices] = 0.
 
 # Dirichlet on the rightmost part of the boundary:
-for i in range(Ny):
-    K = i*Nx
-    indices = loc_glob[K, ::N]
-    S[indices] = 0.
-    S[indices, indices] = 1.
-    F[indices] = 0.
+# ACTUALLY: Let's just keep homogeneous Neumann here,
+# The discretisation of he wake is not suited for a
+# boundary layer here.
 
-    K = i*Nx+Nx-1
-    tempind = N*np.arange(N)+N-1
-    indices = loc_glob[K, tempind]
-    S[indices] = 0.
-    S[indices, indices] = 1.
-    F[indices] = 0.
+#for i in range(Ny):
+#    K = i*Nx
+#    indices = loc_glob[K, ::N]
+#    S[indices] = 0.
+#    S[indices, indices] = 1.
+#    F[indices] = 0.
+#
+#    K = i*Nx+Nx-1
+#    tempind = N*np.arange(N)+N-1
+#    indices = loc_glob[K, tempind]
+#    S[indices] = 0.
+#    S[indices, indices] = 1.
+#    F[indices] = 0.
 
 
 ################################
