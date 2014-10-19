@@ -28,12 +28,10 @@ def assemble_convection_matrix(u, x_xi, x_eta, y_xi, y_eta, D, N, weights):
     """Something about the function here.
     """
     tot_points = N**2
-    C = np.zeros( (2*tot_points, 2*tot_points) )
+    C = np.zeros( (tot_points, tot_points) )
 
     for I in range(tot_points):
         for J in range(tot_points):
             C[I,J] = calculate_convection_element(I, J, u, x_xi, x_eta, y_xi, y_eta, D, N, weights, tot_points) 
-
-    C[tot_points:, tot_points:] = C[:tot_points,:tot_points]
 
     return C

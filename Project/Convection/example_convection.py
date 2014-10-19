@@ -24,12 +24,8 @@ y_corners = np.array( [ [-1., -1.], [1., 1.] ] )
 #####################################
 #   LOAD MAPPING:
 ####################################
-def loadfunc1(x,y):
+def loadfunc(x,y):
     return 0.
-
-def loadfunc2(x,y):
-    return 0.
-
 
 ######################################
 # Number of GLL-points:
@@ -58,14 +54,12 @@ Jac, G_tot = lp.assemble_total_G_matrix(X_xi,
                                         N)
 # Assemble stiffness matrix:
 tot_points = N**2
-A = np.zeros( (2*tot_points, 2*tot_points) )
-A[:tot_points, :tot_points] = lp.assemble_local_stiffness_matrix(D, G_tot, N, weights)
-A[tot_points:, tot_points:] = A[:tot_points, :tot_points]
+A = np.zeros( (tot_points, tot_points) )
+A = lp.assemble_local_stiffness_matrix(D, G_tot, N, weights)
 
 # Assembling loading vector:
-F = np.zeros( 2*tot_points )
-F[:tot_points] = lp.assemble_loading_vector(X, Y, loadfunc1, Jac, weights)
-F[:tot_points] = lp.assemble_loading_vector(X, Y, loadfunc2, Jac, weights)
+F = np.zeros( tot_points )
+F[:tot_points] = lp.assemble_loading_vector(X, Y, loadfunc, Jac, weights)
 
 
 #############################################
@@ -92,16 +86,13 @@ C = cf.assemble_convection_matrix(v, X_xi, X_eta, Y_xi, Y_eta, D, N, weights)
 #       BOUNDARY CONDITIONS:
 ###############################################
 
-S = C
+S = C + A
 
 # Lower side:
 for I in range(N):
     S[I] = 0.
     S[I,I] = 1.
     F[I] = -0.5
-    S[I+tot_points] = 0.
-    S[I+tot_points,I+tot_points] = 1.
-    F[I+tot_points] = 1.
 
     # Upper side:
     ind = N*(N-1)+I
@@ -109,9 +100,6 @@ for I in range(N):
     S[ind, ind] = 1.
     F[ind] = 0.
 
-    S[ind+tot_points] = 0.
-    S[ind+tot_points, ind+tot_points] = 1.
-    F[ind+tot_points] = 0.
 
     # Left:
     indl = I*N
@@ -119,9 +107,6 @@ for I in range(N):
     S[indl, indl] = 1.
     F[indl] = 0.
 
-    S[indl+tot_points] = 0.
-    S[indl+tot_points, indl+tot_points] = 1.
-    F[indl+tot_points] = 0.
 
     # Right:
     indr = I*N+N-1
@@ -129,9 +114,6 @@ for I in range(N):
     S[indr, indr] = 1.
     F[indr] = 0.
 
-    S[indr+tot_points] = 0.
-    S[indr+tot_points, indr+ tot_points] = 1.
-    F[indr+tot_points] = 0.
 
 ############################
 #       SOLVING:
@@ -142,8 +124,11 @@ u = la.solve(S,F)
 ############################
 #   PLOTTING:
 ############################
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_wireframe(X,Y,u.reshape( (N,N) ) )
 
-plt.quiver(X,Y, u[:tot_points].reshape((N,N)), u[tot_points:].reshape((N,N)))
+
 plt.show()
 
 
