@@ -49,9 +49,9 @@ Nx = idim-1
 Ny = jdim -1
 # Get number of patch elements:
 patches = sg.get_number_of_patch_elements(X_el, Y_el, idim)
-print patches
+
 # Number of GLL-points:
-N = 2
+N = 3
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N,xis)
 
@@ -141,7 +141,7 @@ print "Assembly time: ", time.time()-t1
 ##########################################
 #   BOUNDARY CONDITIONS:
 ##########################################
-S = C + 100.*A
+S = C + 20.*A
 
 # Dirichlet on the airfoil:
 # With m patch elements, the airfoil is described by the
