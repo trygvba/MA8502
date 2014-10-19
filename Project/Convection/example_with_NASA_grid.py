@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 
 # Preliminary functions:
 def loadfunc(x,y):
-    return -1.
+    return 1.
 
 def v1(x,y):
     return 1.
