@@ -31,25 +31,27 @@ def loadfunc(x,y):
     return -1.
 
 def v1(x,y):
-    return x
+    return 1.
+
+v1 = np.vectorize(v1)
 
 def v2(x,y):
-    return y
+    return 0.
 
-
-
+v2 = np.vectorize(v2)
 # Getting element coordinate matrices:
 X_el, Y_el = sg.read_PLOT3D('../Mesh/NASA_grids/grid_coarse.xyz')
+
 jdim, idim = X_el.shape
 
-# Number of elements in the x-direction:
+# Number of elements in the x- and y-direction:
 Nx = idim-1
 Ny = jdim -1
 # Get number of patch elements:
 patches = sg.get_number_of_patch_elements(X_el, Y_el, idim)
-
+print patches
 # Number of GLL-points:
-N = 3
+N = 2
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N,xis)
 
@@ -139,7 +141,7 @@ print "Assembly time: ", time.time()-t1
 ##########################################
 #   BOUNDARY CONDITIONS:
 ##########################################
-S = C + 3.*A
+S = C + 100.*A
 
 # Dirichlet on the airfoil:
 # With m patch elements, the airfoil is described by the
