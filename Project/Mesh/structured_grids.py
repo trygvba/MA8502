@@ -243,3 +243,26 @@ def read_PLOT3D(filename):
     #                   X                                           Y
     return data[:num_points].reshape( (jdim,idim) ), data[num_points:].reshape( (jdim, idim) )
 
+def get_number_of_patch_elements(X,Y, idim):
+    """Function for getting number of patched
+    elements in the wake of the airfoil.
+    INPUT:
+        X,Y: Coordinate matrices. Should have dimension (jdim, idim)
+        idim: Number of points on the grid in the x-direction.
+    OUTPUT:
+        num_patch: Number of patch elements.
+    """
+
+    # We need to check how many points coincide on first row of the coordinate matrices.
+    if ((X[0,0]==X[0,-1]) and (Y[0,0]==Y[0,-1])):
+        i = 1 # Running index
+        cont_bool = True # Boolean signifying if we should continue iterating.
+        while(cont_bool):
+            if( (X[0,i]==X[0,idim-1-i]) and (Y[0,i]==Y[0,idim-1-i])):
+                i += 1
+            else:
+                cont_bool = False
+
+        return i-1
+    else:
+        return 0
