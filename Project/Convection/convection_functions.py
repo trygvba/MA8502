@@ -22,7 +22,7 @@ def calculate_convection_element(I, J, u, x_xi, x_eta, y_xi, y_eta, D, N, weight
     NJ_xi = (n==j)*D[m,i]
     NJ_eta = (m==i)*D[n,j]
 
-    return weights[i]*weights[j]*(u[I]*(y_eta[j,i]*NJ_xi-y_xi[j,i]*NJ_eta) + u[I+tot_points]*(x_xi[j,i]*NJ_eta - x_eta[j,i]*NJ_xi))
+    return weights[i]*weights[j]*(u[I]*(y_eta[i,j]*NJ_xi-y_xi[j,i]*NJ_eta) + u[I+tot_points]*(x_xi[j,i]*NJ_eta - x_eta[i,j]*NJ_xi))
 
 def assemble_convection_matrix(u, x_xi, x_eta, y_xi, y_eta, D, N, weights):
     """Something about the function here.

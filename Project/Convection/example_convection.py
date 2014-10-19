@@ -4,14 +4,20 @@ import sys
 sys.path.insert(0, '../Mesh')
 sys.path.insert(0, '../Laplace')
 
+import time
+
+# Numpy and Scipy:
 import numpy as np
 import scipy.linalg as la
+
+# Own modules:
 import laplace_functions as lp
 import structured_grids as sg
 import quadrature_nodes as qn
 import gordon_hall as gh
 import convection_functions as cf
 
+# For plotting:
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 
@@ -24,19 +30,25 @@ y_corners = np.array( [ [-1., -1.], [1., 1.] ] )
 #####################################
 #   LOAD MAPPING:
 ####################################
+mu = 1.
 def loadfunc(x,y):
-    return 0.
+    return mu*(2.-x**2 - y**2)
 
 ######################################
 # Number of GLL-points:
-N = 20
+N = 40
+
+print "N: ", N
+print "Getting GLL-points and weights..."
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N, xis)
 
 # Coordinate matrices:
+print "Using Gordon Hall to get coordinate matrices..."
 X, Y = gh.gordon_hall_straight_line(0,0,x_corners, y_corners, xis, N)
 
 # Getting lagrangian derivative matrix:
+print "Getting Lagrangian derivative matrix."
 D = sg.diff_matrix(xis, N)
 
 # Get several derivative matrices:
@@ -46,6 +58,7 @@ Y_xi = np.dot(Y,D)
 Y_eta = np.dot(Y.T,D)
 
 # Get jacobian and total G matrix:
+"Getting Jacobian and total 'G-matrix'..."
 Jac, G_tot = lp.assemble_total_G_matrix(X_xi,
                                         X_eta,
                                         Y_xi,
@@ -54,13 +67,16 @@ Jac, G_tot = lp.assemble_total_G_matrix(X_xi,
                                         N)
 # Assemble stiffness matrix:
 tot_points = N**2
-A = np.zeros( (tot_points, tot_points) )
+print "Assembling stiffness matrix..."
+t1 = time.time()
 A = lp.assemble_local_stiffness_matrix(D, G_tot, N, weights)
-
+print "Stiffness assembly: ", time.time()-t1
 # Assembling loading vector:
-F = np.zeros( tot_points )
-F[:tot_points] = lp.assemble_loading_vector(X, Y, loadfunc, Jac, weights)
 
+print "Assembling loading vector..."
+t1 = time.time()
+F = lp.assemble_loading_vector(X, Y, loadfunc, Jac, weights)
+print "Loading assembly: ", time.time() - t1
 
 #############################################
 # Now for the shit with the vector field:
@@ -77,22 +93,26 @@ def v1(x,y):
 def v2(x,y):
     return x*(1-y**2)
 #############################
+print "Assembling convection matrix..."
 v[:tot_points] = v1(X,Y).ravel()
 v[tot_points:] = v2(X,Y).ravel()
 
+t1 = time.time()
 C = cf.assemble_convection_matrix(v, X_xi, X_eta, Y_xi, Y_eta, D, N, weights)
+print "Convection assembly: ", time.time() - t1
 
 ###############################################
 #       BOUNDARY CONDITIONS:
 ###############################################
 
-S = C + A
+print "Setting up boundary conditions..."
+S = C + mu*A
 
 # Lower side:
 for I in range(N):
     S[I] = 0.
     S[I,I] = 1.
-    F[I] = -0.5
+    F[I] = 0.
 
     # Upper side:
     ind = N*(N-1)+I
@@ -118,7 +138,12 @@ for I in range(N):
 ############################
 #       SOLVING:
 ############################
+print "Solving system...."
 u = la.solve(S,F)
+
+print "Done..."
+u_exact = 0.5*(1-X**2)*(1-Y**2)
+
 
 
 ############################
@@ -126,7 +151,7 @@ u = la.solve(S,F)
 ############################
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot_wireframe(X,Y,u.reshape( (N,N) ) )
+ax.plot_wireframe(X,Y,u.reshape((N,N)))
 
 
 plt.show()
