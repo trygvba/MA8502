@@ -223,7 +223,7 @@ def read_PLOT3D(filename):
 
     #Opening file and preliminary parameter retrieval:
     fid = open(filename,'r')
-    nbl = int(fid.realine() )   #Number of blocks.
+    nbl = int(fid.readline() )   #Number of blocks.
     line = fid.readline().split()
     idim = int(line[0])         #Points in x-direction.
     jdim = int(line[1])         #Points in y-direction.
