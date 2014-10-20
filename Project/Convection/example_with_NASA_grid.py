@@ -51,7 +51,7 @@ Ny = jdim -1
 patches = sg.get_number_of_patch_elements(X_el, Y_el, idim)
 
 # Number of GLL-points:
-N = 2
+N = 3
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N,xis)
 
@@ -192,15 +192,12 @@ print "Time to solve: ", time.time()-t1
 ################################
 #       PLOTTING:
 ################################
+U_min, U_max = -np.abs(U).max(), np.abs(U).max()
 fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
+ax = fig.add_subplot(111)
 
 for K in range(num_el):
-    ax.plot_wireframe(X[K],Y[K], U[loc_glob[K]].reshape( (N,N) ) )
+    temp = U[loc_glob[K]].reshape((N,N))
+    plt.pcolormesh(X[K],Y[K], temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
 
 plt.show()
-
-    
-
-
-
