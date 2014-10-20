@@ -200,4 +200,11 @@ for K in range(num_el):
     temp = U[loc_glob[K]].reshape((N,N))
     plt.pcolormesh(X[K],Y[K], temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
 
+# Plot grid:
+for i in range(idim):
+    plt.plot(X_el[:,i], Y_el[:,i],'b')
+
+for i in range(jdim):
+    plt.plot(X_el[i,:], Y_el[i,:], 'b')
+
 plt.show()
