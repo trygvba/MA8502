@@ -51,7 +51,7 @@ Ny = jdim -1
 patches = sg.get_number_of_patch_elements(X_el, Y_el, idim)
 
 # Number of GLL-points:
-N = 3
+N = 2
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N,xis)
 
