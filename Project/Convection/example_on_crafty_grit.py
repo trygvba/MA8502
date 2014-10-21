@@ -207,6 +207,7 @@ X5, Y5 = gh.gordon_hall_grid( gamma_51, gamma_52, gamma_53, gamma_54, xis, xis)
 X6, Y6 = gh.gordon_hall_grid( gamma_61, gamma_62, gamma_63, gamma_64, xis, xis)
 
 #Reshape the coordinate vector:
+# This doesn't do anything I think.
 X1 = X1.reshape( (ydim, xdim) )
 Y1 = Y1.reshape( (ydim, xdim) )
 X2 = X2.reshape( (ydim, xdim) )
