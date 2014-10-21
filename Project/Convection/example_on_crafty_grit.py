@@ -172,7 +172,7 @@ def gamma_64(xi):
 
 ###############################################
 
-#X_el, Y_el = sg.read_PLOT3D('../Mesh/NASA_grids/grid_coarse.xyz')
+
 
 # Order of GLL-points:
 N = 20
@@ -416,23 +416,41 @@ print "Assembly time: ", time.time()-t1, ", nice job, get yourself a beer."
 ##########################################
 S = C + 20.*A
 
-# Dirichlet on the airfoil:
-# With m patch elements, the airfoil is described by the
-# elements [m,...,Nx-1-m]
-for i in range(patches,Nx-patches):
-    # We want the bottom part of the elements:
-    indices = loc_glob[i,:N]
+# Upper part:
+for k in range(6):
+    indices = Local_to_global[k,-N:]
     S[indices] = 0.
+    F[indices] = 0.
     S[indices,indices] = 1.
-    F[indices] = 0.
 
-# Dirichlet on outer part:
-for i in range(Nx):
-    # We want the top part of these elements:
-    indices = loc_glob[Nx*(Ny-1)+i,N*(N-1):]
+# Lower part:
+for k in range(1,5):
+    indices = Local_to_global[k,:N]
     S[indices] = 0.
+    F[indices] = 1.
     S[indices, indices] = 1.
-    F[indices] = 0.
+
+#Left part of the first element:
+indices = Local_to_global[0,::N]
+S[indices] = 0.
+F[indices] = 0.
+S[indices,indices] = 1.
+
+# Right part of the last element:
+indices = Local_to_global[-1, N-1 + N*np.arange(N)]
+S[indices] = 0.
+F[indices] = 0.
+S[indices, indices] = 1.
+
+print "Now for the Direchlet stuff"
+
+# Dirichlet on outer part: DO SOMETHING WITH THIS
+#for i in range(Nx):
+#    # We want the top part of these elements:
+#    indices = loc_glob[Nx*(Ny-1)+i,N*(N-1):]
+#    S[indices] = 0.
+#    S[indices, indices] = 1.
+#    F[indices] = 0.
 
 # Dirichlet on the rightmost part of the boundary:
 # ACTUALLY: Let's just keep homogeneous Neumann here,
@@ -466,18 +484,38 @@ print "Time to solve: ", time.time()-t1
 #       PLOTTING:
 ################################
 U_min, U_max = -np.abs(U).max(), np.abs(U).max()
-fig = plt.figure()
-ax = fig.add_subplot(111)
+#fig = plt.figure()
+#ax = fig.add_subplot(111)
 
-for K in range(num_el):
-    temp = U[loc_glob[K]].reshape((N,N))
-    plt.pcolormesh(X[K],Y[K], temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
+#for K in range(num_el):
+#    temp = U[loc_glob[K]].reshape((N,N))
+temp = U[loc_glob[0]].reshape((N,N))
+plt.pcolormesh(X1,Y1, temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
+temp = U[loc_glob[1]].reshape((N,N))
+plt.pcolormesh(X2,Y2, temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
+temp = U[loc_glob[2]].reshape((N,N))
+plt.pcolormesh(X3,Y3, temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
+temp = U[loc_glob[3]].reshape((N,N))
+plt.pcolormesh(X4,Y4, temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
+temp = U[loc_glob[4]].reshape((N,N))
+plt.pcolormesh(X5,Y5, temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
+temp = U[loc_glob[5]].reshape((N,N))
+plt.pcolormesh(X6,Y6, temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
 
-# Plot grid:
-for i in range(idim):
-    plt.plot(X_el[:,i], Y_el[:,i],'b')
-
-for i in range(jdim):
-    plt.plot(X_el[i,:], Y_el[i,:], 'b')
+for i in range(N):
+	plt.plot(X1[:,i], Y1[:,i],'b')
+	plt.plot(X1[i,:], Y1[i,:], 'b')
+	plt.plot(X2[:,i], Y2[:,i],'b')
+	plt.plot(X2[i,:], Y2[i,:], 'b')
+	plt.plot(X3[:,i], Y3[:,i],'b')
+	plt.plot(X3[i,:], Y3[i,:], 'b')
+	plt.plot(X4[:,i], Y4[:,i],'b')
+	plt.plot(X4[i,:], Y4[i,:], 'b')
+	plt.plot(X5[:,i], Y5[:,i],'b')
+	plt.plot(X5[i,:], Y5[i,:], 'b')
+	plt.plot(X6[:,i], Y6[:,i],'b')
+	plt.plot(X6[i,:], Y6[i,:], 'b')
 
 plt.show()
+
+
