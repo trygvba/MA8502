@@ -1,5 +1,6 @@
 # Module containing functions for assembling the convective matrices.
 import numpy as np
+import scipy.linalg as la
 
 def calculate_convection_element(I, J, u, x_xi, x_eta, y_xi, y_eta, D, N, weights, tot_points):
     """Function for evaluating ONE element of the convection  matrix.
@@ -40,7 +41,7 @@ def assemble_convection_matrix(u, x_xi, x_eta, y_xi, y_eta, D, N, weights):
 ######## OBS!! NEEDS TO BE TESTED PROPERLY!!!!! ################
 ################################################################
 
-def calculate_const_convection_element(I, J, x_xi, x_eta, y_xi, y_eta, D, N, weights, tot_points):
+def calculate_const_convection_element(I, J, x_xi, x_eta, y_xi, y_eta, D, N, weights) :
     """Function for evaluating ONE element of the convection  matrix.
     INPUT:
         I,J: Indices in the matrix.
@@ -81,7 +82,7 @@ def assemble_const_convection_matrix(x_xi, x_eta, y_xi, y_eta, D, N, weights):
 
     for I in range(tot_points):
         for J in range(tot_points):
-            C1[I,J] , C2[I,J] = calculate_convection_element(I, J, x_xi, x_eta, y_xi, y_eta, D, N, weights, tot_points) 
+            C1[I,J] , C2[I,J] = calculate_const_convection_element(I, J, x_xi, x_eta, y_xi, y_eta, D, N, weights) 
 
     return C1,C2
 def update_convection_matrix(u,C1,C2,N):
@@ -94,5 +95,5 @@ def update_convection_matrix(u,C1,C2,N):
   OUTPUT: 
     C: The nonlinear convection matrix
   """
-  return (u[:N]*C1.T).T+(u[N:]*C2.T).T
+  return la.block_diag((u[:N]*C1.T).T,(u[N:]*C2.T).T)
 
