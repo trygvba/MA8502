@@ -208,6 +208,24 @@ def local_to_global_top_down(idim, jdim, nx, ny, patch=False, num_patch=0):
 
     return G
 
+def local_to_global_pressure(idim, jdim, nx, ny)
+    """Function for making the local-to-global mapping for the pressure.
+    Note that since there are only internal nodes, no patching is required,
+    and in general a much easier thing to construct than for the velocity grid.
+    INPUT:
+        idim, jdim: Element corner points in the x- and y-direction, resp.
+        nx, ny: Number of GLL- points in the x- and y-direction resp.
+    OUTPUT:
+        Gp: Local-to-global matrix for the pressure grid.
+    """
+    # Number of elements:
+    num_el = (idim-1)*(jdim-1)
+
+    #Number of internal points per element:
+    dof_el = (nx-2)*(ny-2)
+
+    return np.arange(num_el*dof_el).reshape( (num_el, dof_el) )
+
 
 
 ############################################

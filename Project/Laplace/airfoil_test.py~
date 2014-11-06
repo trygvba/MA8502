@@ -248,7 +248,9 @@ A6 = lp.assemble_local_stiffness_matrix(D, G_tot6, N, weights)
 A = np.zeros((6*tot_points,6*tot_points))#initialise the cumdumpster
 print A.shape
 print A1.shape
-print type(np.ix_(Local_to_global[0])[0])			###########################################line of fuckups beyond this line beyond this line beyond this line; 
+print type(np.ix_(Local_to_global[0])[0])			
+###########################################line of fuckups beyond this line beyond this line beyond this line
+#error reads: "array is not broadcastable to correct shape"
 A[np.ix_(Local_to_global[0])[0]] = A1
 A[np.ix_(Local_to_global[1])] = A2
 A[np.ix_(Local_to_global[2])] = A3
