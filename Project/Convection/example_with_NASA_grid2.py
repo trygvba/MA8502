@@ -1,0 +1,307 @@
+# Here's a script showing how to use all our modules with the NASA grid
+# on an advection-diffusion equation.
+
+import sys
+sys.path.insert(0, '../Mesh')
+sys.path.insert(0, '../Laplace')
+
+import time
+
+# Numpy and Scipy:
+import numpy as np
+import scipy.linalg as la
+import scipy.sparse as sparse
+
+# Own modules:
+import laplace_functions as lp
+import structured_grids as sg
+import quadrature_nodes as qn
+import gordon_hall as gh
+import convection_functions as cf
+
+# For plotting:
+from mpl_toolkits.mplot3d import axes3d
+import matplotlib.pyplot as plt
+import matplotlib.pylab as  pl
+#############################################
+#       LET'S GET STARTED:
+#############################################
+# preliminary functions
+def loadfunc(x,y):
+    return 1.
+
+def v1(x,y):
+    return 1.
+
+v1 = np.vectorize(v1)
+
+def v2(x,y):
+    return 0.
+
+v2 = np.vectorize(v2)
+
+# Getting element coordinate matrices:
+X_el, Y_el = sg.read_PLOT3D('../Mesh/NASA_grids/grid_coarse.xyz')
+
+jdim, idim = X_el.shape
+
+# Number of elements in the x- and y-direction:
+Nx = idim-1
+Ny = jdim -1
+# Get number of patch elements:
+patches = sg.get_number_of_patch_elements(X_el, Y_el, idim)
+
+# Number of GLL-points:
+N = 2
+xis = qn.GLL_points(N)
+weights = qn.GLL_weights(N,xis)
+
+# Diffusion constant
+diffusion = 0.1
+
+# Get derivative matrix:
+D = sg.diff_matrix(xis,N)
+
+# Get local-to-global mapping:
+loc_glob = sg.local_to_global_top_down(idim, jdim,
+                                        N, N,
+                                        patch=True,
+                                        num_patch=patches)
+
+
+# Number of elements:
+num_el = loc_glob.shape[0]
+
+# Degrees of freedom:
+dofs = 2*(np.max(loc_glob)+1) # Multiply with 2 because every point has two degrees of freedom
+tot_points = dofs/2
+# Points per ele.Tment:
+el_points = 2*(N**2) # Multiply with 2 because every point has two degrees of freedom
+
+# initial conditions
+U1 = np.ones(tot_points)
+U2 = 0.5*np.ones(tot_points)
+
+print "Number of elements: ", num_el
+print "Degress of freedom: ", dofs
+
+###########################################
+#       OFF TO THE ASSEMBLY PART:
+###########################################
+
+# Initialise Stiffness- and convection matrices:
+A1 = np.zeros( (tot_points, tot_points) )
+A2 = np.zeros( (tot_points, tot_points) )
+C1 = np.zeros( (tot_points, tot_points) )
+C2 = np.zeros( (tot_points, tot_points) )
+Cc1 = np.zeros( (tot_points, tot_points) )
+Cc2 = np.zeros( (tot_points, tot_points) )
+C = np.zeros( (tot_points, tot_points) )
+
+# Initialise loading vector:
+F1 = np.zeros( tot_points )
+F2 = np.zeros( tot_points )
+#Initialse local coordinate matrices:
+X = np.zeros( (num_el, N, N) )
+Y = np.zeros( (num_el, N, N) )
+
+
+# Initialise a v-vector:
+v = np.zeros( el_points)
+
+# LET'S BEGIN ITERATING OVER EACH ELEMENT:
+print "Starting assembly..."
+t1 = time.time()
+for K in range(num_el):
+    indx = K%Nx
+    indy = K/Nx
+
+    #Get local coordinates:
+    X[K], Y[K] = gh.gordon_hall_straight_line(indy, indx, X_el, Y_el, xis, N)
+    
+    X_xi = np.dot(X[K],D)
+    X_eta = np.dot(X[K].T,D)
+    Y_xi = np.dot(Y[K], D)
+    Y_eta = np.dot(Y[K].T, D)
+
+    # Get Jacobian and total G-matrix:
+    Jac, G_tot = lp.assemble_total_G_matrix(X_xi,
+                                            X_eta,
+                                            Y_xi,
+                                            Y_eta,
+                                            N,
+                                            N)
+
+    # Insert contribution to stiffness matrix:
+    A1[np.ix_(loc_glob[K],loc_glob[K])] += lp.assemble_local_stiffness_matrix(D, G_tot, N, weights)
+
+    # Insert contribution to convection matrix:
+    v[:(el_points/2)] = v1(X[K],Y[K]).ravel()
+    v[(el_points/2):] = v2(X[K],Y[K]).ravel()
+    C[np.ix_(loc_glob[K], loc_glob[K])] += cf.assemble_convection_matrix(v,
+                                                                        X_xi,
+                                                                        X_eta,
+                                                                        Y_xi,
+                                                                        Y_eta,
+                                                                        D,
+                                                                        N,
+                                                                        weights)
+
+    # Getting the contribution to the convection matrices
+    Cc1_temp,Cc2_temp =               cf.assemble_const_convection_matrix(
+                                                                        X_xi,
+                                                                        X_eta,
+                                                                        Y_xi,
+                                                                        Y_eta,
+                                                                        D,
+                                                                        N,
+                                                                        weights)
+
+    # Insert contribution to the convection matrices
+    Cc1[np.ix_(loc_glob[K], loc_glob[K])]+= Cc1_temp
+    Cc2[np.ix_(loc_glob[K], loc_glob[K])]+= Cc2_temp 
+
+    # Insert contribution to the loading vector in x and y direction:
+    F1[loc_glob[K]] += lp.assemble_loading_vector(X[K], Y[K], loadfunc, Jac, weights)
+    F2[loc_glob[K]] += lp.assemble_loading_vector(X[K], Y[K], loadfunc, Jac, weights)
+
+print "Assembly time: ", time.time()-t1
+
+##########################################
+#   Making the total matrices - Convection step should be ran in a loop
+#########################################
+#initial U1 and U2
+# Matrices
+C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2,tot_points)
+S1 = C1+diffusion*A1
+S2 = C2+diffusion*A1
+
+##########################################
+#   BOUNDARY CONDITIONS:
+##########################################
+S = C + diffusion*A1 # Old version
+
+# Dirichlet on the airfoil:
+# With m patch elements, the airfoil is described by the
+# elements [m,...,Nx-1-m]
+for i in range(patches,Nx-patches):
+    # We want the bottom part of the elements:
+    indices = loc_glob[i,:N]
+    S[indices] = 0.
+    S[indices,indices] = 1.
+    S1[indices] = 0.
+    S1[indices,indices] = 1.
+    F1[indices] = 0.
+    S2[indices] = 0.
+    S2[indices,indices] = 1.
+    F2[indices] = 0.
+
+# Dirichlet on outer part:
+for i in range(Nx):
+    # We want the top part of these elements:
+    indices = loc_glob[Nx*(Ny-1)+i,N*(N-1):]
+    S[indices] = 0.
+    S[indices,indices] = 1.
+    S1[indices] = 0.
+    S1[indices,indices] = 1.
+    F1[indices] = 0.
+    S2[indices] = 0.
+    S2[indices,indices] = 1.
+    F2[indices] = 0.
+
+# Dirichlet on the rightmost part of the boundary:
+# ACTUALLY: Let's just keep homogeneous Neumann here,
+# The discretisation of he wake is not suited for a
+# boundary layer here.
+
+#for i in range(Ny):
+#    K = i*Nx
+#    indices = loc_glob[K, ::N]
+#    S[indices] = 0.
+#    S[indices, indices] = 1.
+#    F[indices] = 0.
+#
+#    K = i*Nx+Nx-1
+#    tempind = N*np.arange(N)+N-1
+#    indices = loc_glob[K, tempind]
+#    S[indices] = 0.
+#    S[indices, indices] = 1.
+#    F[indices] = 0.
+
+
+################################
+#       SOLVING:
+################################
+
+#S = la.block_diag(S1,S2)
+#F = np.append(F1,F2)
+
+print "Starting to solve..."
+t1 = time.time()
+U1 = la.solve(S1,F1)
+U2 = la.solve(S2,F2)
+#U = la.solve(S,F1)
+print "Time to solve: ", time.time()-t1
+
+for i in range(4):
+    print "Updating Convection Matrix..."
+    t1 = time.time()
+    C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2,dofs/2)
+    S1 = C1 + diffusion*A1
+    S2 = C2 + diffusion*A1
+    print "Time to update: ",time.time()-t1
+
+# Dirichlet on the airfoil:
+# With m patch elements, the airfoil is described by the
+# elements [m,...,Nx-1-m]
+    for i in range(patches,Nx-patches):
+        # We want the bottom part of the elements:
+        indices = loc_glob[i,:N]
+        S1[indices] = 0.
+        S1[indices,indices] = 1.
+        F1[indices] = 0.
+        S2[indices] = 0.
+        S2[indices,indices] = 1.
+        F2[indices] = 0.
+
+# Dirichlet on outer part:
+    for i in range(Nx):
+        # We want the top part of these elements:
+        indices = loc_glob[Nx*(Ny-1)+i,N*(N-1):]
+        S1[indices] = 0.
+        S1[indices,indices] = 1.
+        F1[indices] = 0.
+        S2[indices] = 0.
+        S2[indices,indices] = 1.
+        F2[indices] = 0.
+
+    print "Starting to solve..."
+    t1 = time.time()
+    U1N = la.solve(S1,F1)
+    U2N = la.solve(S2,F2)
+    print "Time to solve: ", time.time()-t1
+    print'||uk-uk-1|| = ', (la.norm(U1N-U1))
+    U1 = U1N
+    U2 = U2N
+
+U = U1
+################################
+#       PLOTTING:
+################################
+U_min, U_max = -np.abs(U).max(), np.abs(U).max()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+
+for K in range(num_el):
+    temp = U[loc_glob[K]].reshape((N,N))
+    #pl.quiver(X[K],Y[K],U1,U2,pivot='middle')
+    plt.pcolormesh(X[K],Y[K], temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
+
+# Plot grid:
+for i in range(idim):
+    plt.plot(X_el[:,i], Y_el[:,i],'b')
+
+for i in range(jdim):
+    plt.plot(X_el[i,:], Y_el[i,:], 'b')
+
+plt.show()
