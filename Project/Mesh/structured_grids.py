@@ -208,7 +208,7 @@ def local_to_global_top_down(idim, jdim, nx, ny, patch=False, num_patch=0):
 
     return G
 
-def local_to_global_pressure(idim, jdim, nx, ny)
+def local_to_global_pressure(idim, jdim, nx, ny):
     """Function for making the local-to-global mapping for the pressure.
     Note that since there are only internal nodes, no patching is required,
     and in general a much easier thing to construct than for the velocity grid.
