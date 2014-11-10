@@ -1,4 +1,5 @@
 # Module containing functions for handling the divergence terms in the system.
+import numpy as np
 
 def pressure_basis_point_evaluations(xis, N, D):
     """Function for evaluating the pressure basis functions
