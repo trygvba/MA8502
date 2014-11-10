@@ -26,13 +26,13 @@ import matplotlib.pylab as pl
 
 # Defining loading function
 def f1(x,y):
-    return 0
+    return 0.
 
 def f2(x,y):
-    return 0
+    return -1.
 
 def f3(x,y):
-    return 0
+    return 0.
 
 # Defining initial values
 def v1(x,y):
@@ -41,12 +41,12 @@ def v1(x,y):
 v1 = np.vectorize(v1)
 
 def v2(x,y):
-    return 1.
+    return 2.
 
 v2 = np.vectorize(v2)
 
 # Defining Diffusion constant
-mu = 0.1
+mu = 0.01
 
 
 #####################################
@@ -89,14 +89,22 @@ U2 = v2(X,Y).ravel()
 # Now we're closing in on some shit. Prepare to ASSEMBLE!
 # Assemble stiffness matrix:
 print "Assembling stiffness matrix."
+t2 = time.time()
 A = lp.assemble_local_stiffness_matrix(D, G_tot, N, weights)
+print "Time to make stiffness matrix", time.time()-t2
 
 # Assemble constant convection matrix
+print "Assembling convection matrices."
+t1 = time.time()
 Cc1,Cc2= cf.assemble_const_convection_matrix(X_xi, X_eta, Y_xi, Y_eta, D, N, weights)
 C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2,N_tot)
+print "Time to make convection matrices: ", time.time()-t1
 
 # Assemble local divergence matrix
+print "Assembling divergence matrix."
+t1 = time.time()
 B = df.assemble_local_divergence_matrix(X_xi, X_eta, Y_xi, Y_eta, P_evals, D, weights, N)
+print "Time to make divergence matrices: ", time.time()-t1
 #pl.spy(B)
 #pl.show()
 
@@ -104,15 +112,14 @@ B = df.assemble_local_divergence_matrix(X_xi, X_eta, Y_xi, Y_eta, P_evals, D, we
 print "Assembling loading vector."
 F1 = lp.assemble_loading_vector(X, Y, f1, Jac, weights)
 F2 = lp.assemble_loading_vector(X, Y, f2, Jac, weights)
-#F3 = lp.assemble_loading_vector(X_p, Y_p, f3, Jac, weights_p)
-F3 = np.zeros( (N-2)**2 )
+F3 = lp.assemble_loading_vector(X_p, Y_p, f3, Jac, weights_p)
 
 
 # Defining S - Matrix
 S1 = C1 + mu*A
 S2 = C2 + mu*A
 
-print "Time to assemble all blockmatrices: ", time.time()-t1
+print "Time to assemble all blockmatrices: ", time.time()-t2
 
 #########################################################
 ##################### ASSEMBLY - END ####################
@@ -139,8 +146,9 @@ for i in range(N):
     #Right side:
     S1[i*N+N-1,:] = 0.
     S1[i*N+N-1, i*N+N-1] =1.
-    F1[i*N+N-1] = 1.
+    F1[i*N+N-1] = 2.
 
+######## Y-direction #########
     #Lower side:
     S2[i,:] = 0.
     S2[i,i] = 1.
@@ -149,7 +157,7 @@ for i in range(N):
     #Upper side:
     S2[N*(N-1)+i,:] = 0.
     S2[N*(N-1)+i, N*(N-1)+i] = 1.
-    F2[N*(N-1)+i] = 1.
+    F2[N*(N-1)+i] = 0.
 
     #Left side:
     S2[i*N,:] = 0.
@@ -169,11 +177,15 @@ S = la.block_diag(S1,S2)
 F = np.append(F1,np.append(F2,F3))
 W = np.bmat([[S , B],
             [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
+m = 15;
+W[2*N**2+m,:] = 0
+W[2*N**2+m,2*N**2+m] = 1
+F[2*N**2+m] = 0
 
 eps = 0.00001
 error = 1
 counter = 1
-N_it = 10
+N_it = 30
 UVP = la.solve(W,F)
 U1 = UVP[:N**2]
 U2 = UVP[N**2:2*N**2]
@@ -228,6 +240,8 @@ while (error>eps and counter <= N_it):
   S = la.block_diag(S1,S2)
   W = np.bmat([[S , B],
             [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
+  W[2*N**2+m,:] = 0
+  W[2*N**2+m,2*N**2+m] = 1
   print "Time to update total matrix", time.time()-t1
   t1 = time.time()
   UVP_new = la.solve(W, F)
@@ -237,7 +251,7 @@ while (error>eps and counter <= N_it):
   U2 = UVP[N**2:2*N**2]
   counter += 1
   print "Time to solve:             ", time.time()-t1
-  #print "error for the", counter,"th iteration:" , error
+  print "error :                    ", error
 
 
 #   TIME TO SOLVE:
