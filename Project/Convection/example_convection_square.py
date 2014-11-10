@@ -169,6 +169,7 @@ for i in range(N):
     S2[i*N+N-1, i*N+N-1] =1.
     F2[i*N+N-1] = 0.
 
+
 ########################
 #   SOLVING ITERATIVELY
 ########################
@@ -177,10 +178,11 @@ S = la.block_diag(S1,S2)
 F = np.append(F1,np.append(F2,F3))
 W = np.bmat([[S , B],
             [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
+
 m = 15;
-W[2*N**2+m,:] = 0
-W[2*N**2+m,2*N**2+m] = 1
-F[2*N**2+m] = 0
+W[2*N**2+m,:] = 0.
+W[2*N**2+m,2*N**2+m] = 1.
+F[2*N**2+m] = 0.
 
 eps = 0.00001
 error = 1
