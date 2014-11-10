@@ -46,18 +46,28 @@ def assemble_local_divergence_matrix(X_xi, X_eta, Y_xi, Y_eta, P_evals, D, weigh
     B = np.zeros( (2*dofs_u, dofs_p) )
 
     #Starting the assembly phase:
-    for J in range(dofs_p):
-        k = J%(N-2)
-        l = J/(N-2)
-        for I in range(dofs_u):
-            i = I%N
-            j = I/N
+    for I in range(dofs_u):
+        i = I%N
+        j = I/N
+        for J in range(dofs_p):
+            k=J%(N-2)
+            l=J/(N-2)
+
             # Assembling B[I,J]:
-            B[I,J] = np.sum( weights[j]*weights*P_evals[k]*P_evals[l,j]*Y_eta[:,j]*D[i,:] )
-            B[I,J] += -np.sum( weights[i]*weights*P_evals[k,i]*P_evals[l]*Y_xi[:,i]*D[j,:] )
+            B[I,J] += weights[j]*P_evals[l,j]*(weights[0]*Y_eta[0,j]*D[i,0]*P_evals[k,0]
+                        +weights[k+1]*Y_eta[k+1,j]*D[i,k+1] + weights[-1]*Y_eta[-1,j]*D[i,-1]*P_evals[k,-1])
 
-            # Assembling B[I+N, J]
-            B[I+dofs_u, J] = -np.sum( weights[j]*weights*P_evals[k]*P_evals[l,j]*X_eta[:,j]*D[i,:] )
-            B[I+dofs_u, J] += np.sum( weights[i]*weights*P_evals[k,i]*P_evals[l]*X_xi[:,i]*D[j,:] )
+            B[I,J] -= weights[i]*P_evals[k,i]*(weights[0]*Y_xi[0,i]*D[j,0]*P_evals[l,0]
+                        +weights[l+1]*Y_xi[l+1,i]*D[j,l+1] + weights[-1]*Y_xi[-1,i]*D[j,-1]*P_evals[l,-1])
 
+
+            # Assembling B[I+dofs_u, J]:
+            B[I+dofs_u, J] -= weights[j]*P_evals[l,j]*(weights[0]*X_eta[0,j]*D[i,0]*P_evals[k,0]
+                                +weights[k+1]*X_eta[k+1,j]*D[i,k+1] + weights[-1]*X_eta[-1,j]*D[i,-1]*P_evals[k,-1])
+
+            B[I+dofs_u,J] += weights[i]*P_evals[k,i]*(weights[0]*X_xi[0,i]*D[j,0]*P_evals[l,0]
+                                +weights[l+1]*X_xi[l+1,i]*D[j,l+1] + weights[-1]*X_xi[-1,i]*D[j,-1]*P_evals[l,-1])
+   
+            
     return B
+
