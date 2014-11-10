@@ -53,19 +53,23 @@ def assemble_local_divergence_matrix(X_xi, X_eta, Y_xi, Y_eta, P_evals, D, weigh
             k=J%(N-2)
             l=J/(N-2)
 
-            # Assembling B[I,J]:
-            B[I,J] += weights[j]*P_evals[l,j]*(weights[0]*Y_eta[0,j]*D[i,0]*P_evals[k,0]
+            if ((j==0) or (j==l) or (j==N-1)):
+                # Assembling the B[I,J] part I:
+                B[I,J] += weights[j]*P_evals[l,j]*(weights[0]*Y_eta[0,j]*D[i,0]*P_evals[k,0]
                         +weights[k+1]*Y_eta[k+1,j]*D[i,k+1] + weights[-1]*Y_eta[-1,j]*D[i,-1]*P_evals[k,-1])
-
-            B[I,J] -= weights[i]*P_evals[k,i]*(weights[0]*Y_xi[0,i]*D[j,0]*P_evals[l,0]
-                        +weights[l+1]*Y_xi[l+1,i]*D[j,l+1] + weights[-1]*Y_xi[-1,i]*D[j,-1]*P_evals[l,-1])
-
-
-            # Assembling B[I+dofs_u, J]:
-            B[I+dofs_u, J] -= weights[j]*P_evals[l,j]*(weights[0]*X_eta[0,j]*D[i,0]*P_evals[k,0]
+                
+                # Assembling B[I+dofs_u, J] part I:
+                B[I+dofs_u, J] -= weights[j]*P_evals[l,j]*(weights[0]*X_eta[0,j]*D[i,0]*P_evals[k,0]
                                 +weights[k+1]*X_eta[k+1,j]*D[i,k+1] + weights[-1]*X_eta[-1,j]*D[i,-1]*P_evals[k,-1])
 
-            B[I+dofs_u,J] += weights[i]*P_evals[k,i]*(weights[0]*X_xi[0,i]*D[j,0]*P_evals[l,0]
+
+            if ( (i==0) or (i==k) or (i==N-1)):
+                # Assembling B[I,J] part II:
+                B[I,J] -= weights[i]*P_evals[k,i]*(weights[0]*Y_xi[0,i]*D[j,0]*P_evals[l,0]
+                        +weights[l+1]*Y_xi[l+1,i]*D[j,l+1] + weights[-1]*Y_xi[-1,i]*D[j,-1]*P_evals[l,-1])
+
+                # Assembling the B[I+dofs_u, J] part II:
+                B[I+dofs_u,J] += weights[i]*P_evals[k,i]*(weights[0]*X_xi[0,i]*D[j,0]*P_evals[l,0]
                                 +weights[l+1]*X_xi[l+1,i]*D[j,l+1] + weights[-1]*X_xi[-1,i]*D[j,-1]*P_evals[l,-1])
    
             
