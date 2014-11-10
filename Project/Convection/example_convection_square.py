@@ -41,12 +41,12 @@ def v1(x,y):
 v1 = np.vectorize(v1)
 
 def v2(x,y):
-    return 2.
+    return 0.
 
 v2 = np.vectorize(v2)
 
 # Defining Diffusion constant
-mu = 0.01
+mu = 0.1
 
 
 #####################################
@@ -141,7 +141,7 @@ for i in range(N):
     #Left side:
     S1[i*N,:] = 0.
     S1[i*N, i*N] = 1.
-    F1[i*N] = 1.
+    F1[i*N] = 0.
 
     #Right side:
     S1[i*N+N-1,:] = 0.
@@ -152,7 +152,7 @@ for i in range(N):
     #Lower side:
     S2[i,:] = 0.
     S2[i,i] = 1.
-    F2[i] = 1.
+    F2[i] = 0.
 
     #Upper side:
     S2[N*(N-1)+i,:] = 0.
@@ -176,7 +176,7 @@ for i in range(N):
 t1 = time.time()
 S = la.block_diag(S1,S2)
 F = np.append(F1,np.append(F2,F3))
-W = np.bmat([[S , B],
+W = np.bmat([[S , -B],
             [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
 
 m = 15;
@@ -237,13 +237,13 @@ while (error>eps and counter <= N_it):
       #Right side:
       S2[i*N+N-1,:] = 0.
       S2[i*N+N-1, i*N+N-1] =1.
-########### BC - END #################
+############ BC - END #################
 
   S = la.block_diag(S1,S2)
-  W = np.bmat([[S , B],
+  W = np.bmat([[S , -B],
             [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
-  W[2*N**2+m,:] = 0
-  W[2*N**2+m,2*N**2+m] = 1
+  W[2*N**2+m,:] = 0.
+  W[2*N**2+m,2*N**2+m] = 1.
   print "Time to update total matrix", time.time()-t1
   t1 = time.time()
   UVP_new = la.solve(W, F)
@@ -259,7 +259,7 @@ while (error>eps and counter <= N_it):
 #   TIME TO SOLVE:
 ####################
 print "Done solving..."
-P = UVP[:(N-2)**2]
+P = UVP[2*N**2:]
 P = np.reshape ( P, (N-2,N-2) )
 U1 = np.reshape ( U1, (N,N) )
 U2 = np.reshape ( U2, (N,N) )
