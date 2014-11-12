@@ -29,7 +29,7 @@ def f1(x,y):
     return 0.
 
 def f2(x,y):
-    return -1.
+    return 0.
 
 def f3(x,y):
     return 0.
@@ -51,7 +51,7 @@ mu = 0.1
 
 #####################################
 ####### Generating mesh #############
-N = 25
+N = 35
 N_tot = N**2
 xis = qn.GLL_points(N)
 xis_p = xis[1:-1]
@@ -134,19 +134,19 @@ for i in range(N):
     F1[i] = 0.
 
     #Upper side:
-    S1[N*(N-1)+i,:] = 0.
-    S1[N*(N-1)+i, N*(N-1)+i] = 1.
-    F1[N*(N-1)+i] = 0.
+#    S1[N*(N-1)+i,:] = 0.
+#    S1[N*(N-1)+i, N*(N-1)+i] = 1.
+#    F1[N*(N-1)+i] = 0.
 
     #Left side:
     S1[i*N,:] = 0.
     S1[i*N, i*N] = 1.
-    F1[i*N] = 0.
+    F1[i*N] = 1.
 
     #Right side:
-    S1[i*N+N-1,:] = 0.
-    S1[i*N+N-1, i*N+N-1] =1.
-    F1[i*N+N-1] = 2.
+#    S1[i*N+N-1,:] = 0.
+#    S1[i*N+N-1, i*N+N-1] =1.
+#    F1[i*N+N-1] = 2.
 
 ######## Y-direction #########
     #Lower side:
@@ -155,9 +155,9 @@ for i in range(N):
     F2[i] = 0.
 
     #Upper side:
-    S2[N*(N-1)+i,:] = 0.
-    S2[N*(N-1)+i, N*(N-1)+i] = 1.
-    F2[N*(N-1)+i] = 0.
+#    S2[N*(N-1)+i,:] = 0.
+#    S2[N*(N-1)+i, N*(N-1)+i] = 1.
+#    F2[N*(N-1)+i] = 0.
 
     #Left side:
     S2[i*N,:] = 0.
@@ -165,9 +165,9 @@ for i in range(N):
     F2[i*N] = 0.
 
     #Right side:
-    S2[i*N+N-1,:] = 0.
-    S2[i*N+N-1, i*N+N-1] =1.
-    F2[i*N+N-1] = 0.
+#    S2[i*N+N-1,:] = 0.
+#    S2[i*N+N-1, i*N+N-1] =1.
+#    F2[i*N+N-1] = 0.
 
 
 ########################
@@ -210,16 +210,16 @@ while (error>eps and counter <= N_it):
       S1[i,i] = 1.
 
       #Upper side:
-      S1[N*(N-1)+i,:] = 0.
-      S1[N*(N-1)+i, N*(N-1)+i] = 1.
+#      S1[N*(N-1)+i,:] = 0.
+#      S1[N*(N-1)+i, N*(N-1)+i] = 1.
 
       #Left side:
       S1[i*N,:] = 0.
       S1[i*N, i*N] = 1.
 
       #Right side:
-      S1[i*N+N-1,:] = 0.
-      S1[i*N+N-1, i*N+N-1] =1.
+#      S1[i*N+N-1,:] = 0.
+#      S1[i*N+N-1, i*N+N-1] =1.
 
       # Conditions for the y-direction
       #Lower side:
@@ -227,16 +227,16 @@ while (error>eps and counter <= N_it):
       S2[i,i] = 1.
 
       #Upper side:
-      S2[N*(N-1)+i,:] = 0.
-      S2[N*(N-1)+i, N*(N-1)+i] = 1.
+#      S2[N*(N-1)+i,:] = 0.
+#      S2[N*(N-1)+i, N*(N-1)+i] = 1.
 
       #Left side:
       S2[i*N,:] = 0.
       S2[i*N, i*N] = 1.
 
       #Right side:
-      S2[i*N+N-1,:] = 0.
-      S2[i*N+N-1, i*N+N-1] =1.
+#      S2[i*N+N-1,:] = 0.
+#      S2[i*N+N-1, i*N+N-1] =1.
 ############ BC - END #################
 
   S = la.block_diag(S1,S2)
