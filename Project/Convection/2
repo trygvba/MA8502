@@ -51,7 +51,7 @@ mu = 0.001
 
 #####################################
 ####### Generating mesh #############
-N = 50
+N = 10
 N_tot = N**2
 xis = qn.GLL_points(N)
 xis_p = xis[1:-1]
