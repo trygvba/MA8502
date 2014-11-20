@@ -53,9 +53,10 @@ thetadef = 30 #angle between elements 3,4 etc
 num_el = 6
 
 #constants
-mu = 0.5
-alpha = np.pi/10
-v = 100
+mu = 0.01
+N = 20
+alpha = np.pi/10.
+v = 100.
 R = 507.79956092981
 yrekt = 493.522687570593
 xmax = 501.000007802345
@@ -182,7 +183,8 @@ def gamma_64(xi):
 
 
 # Order of GLL-points:
-N = 20
+N_it = 2
+eps = 1e-8
 N_tot = N**2
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N, xis)
@@ -417,16 +419,17 @@ print "Assembly time: ", time.time()-t1, ", nice job, get yourself a beer."
 for i in range(1,5):
     #Lower side of each element:
     indices = loc_glob[i,:N]
+    #indices = loc_glob[i,(N-1)*N:]
     indices = np.hstack( (indices, indices+dofs) )
     F[indices] = 0.
     W[indices] = 0.
     W[indices, indices] = 1.
 
 # Imposing inflow:
-for i in range(2,4):
+for i in range(2,4): #was 2,4
     # Upper side of each element:
     indices = loc_glob[i,(N-1)*N:]
-    
+    #indices = loc_glob[i,:N]
     # For x-direction:
     F[indices] = v*np.cos(alpha)
     W[indices] = 0.
@@ -447,10 +450,9 @@ F[2*dofs+m] = 0.
 ################################
 #       SOLVING:
 ################################
-eps = 1e-8
+
 error = 1
 counter = 1
-N_it = 5
 UVP = la.solve(W,F)
 U1 = UVP[:dofs]
 U2 = UVP[dofs:2*dofs]
@@ -473,6 +475,7 @@ while (error>eps and counter <= N_it):
     for i in range(1,5):
         #Lower side of each element:
         indices = loc_glob[i,:N]
+        #indices = loc_glob[i,(N-1)*N:]
         indices = np.hstack( (indices, indices+dofs) )
         W[indices] = 0.
         W[indices, indices] = 1.
@@ -481,7 +484,7 @@ while (error>eps and counter <= N_it):
     for i in range(2,4):
         # Upper side of each element:
         indices = loc_glob[i,(N-1)*N:]
-        
+        #indices = loc_glob[i,:N]
         # For x-direction:
         W[indices] = 0.
         W[indices, indices] = 1.
@@ -515,22 +518,13 @@ while (error>eps and counter <= N_it):
 X = np.zeros((dofs,dofs))
 Y = np.zeros((dofs,dofs))
 
-X[np.ix_(loc_glob[0], loc_glob[0]) ] =X1.ravel()
-X[np.ix_(loc_glob[1], loc_glob[1]) ] =X2.ravel()
-X[np.ix_(loc_glob[2], loc_glob[2]) ] =X3.ravel()
-X[np.ix_(loc_glob[3], loc_glob[3]) ] =X4.ravel()
-X[np.ix_(loc_glob[4], loc_glob[4]) ] =X5.ravel()
-X[np.ix_(loc_glob[5], loc_glob[5]) ] =X6.ravel()
-
-Y[np.ix_(loc_glob[0], loc_glob[0]) ] =Y1.ravel()
-Y[np.ix_(loc_glob[1], loc_glob[1]) ] =Y2.ravel()
-Y[np.ix_(loc_glob[2], loc_glob[2]) ] =Y3.ravel()
-Y[np.ix_(loc_glob[3], loc_glob[3]) ] =Y4.ravel()
-Y[np.ix_(loc_glob[4], loc_glob[4]) ] =Y5.ravel()
-Y[np.ix_(loc_glob[5], loc_glob[5]) ] =Y6.ravel()
-
 # QUIVERPLOT #
-pl.quiver(X, Y, U1, U2, pivot='middle', scale=10, units='x')
+pl.quiver(X1, Y1, U1[loc_glob[0]], U2[loc_glob[0]])
+pl.quiver(X2, Y2, U1[loc_glob[1]], U2[loc_glob[1]])
+pl.quiver(X3, Y3, U1[loc_glob[2]], U2[loc_glob[2]]) 
+pl.quiver(X4, Y4, U1[loc_glob[3]], U2[loc_glob[3]])
+pl.quiver(X5, Y5, U1[loc_glob[4]], U2[loc_glob[4]])
+pl.quiver(X6, Y6, U1[loc_glob[5]], U2[loc_glob[5]])
 pl.xlabel('$x$')
 pl.ylabel('$y$')
 pl.axis('image')
