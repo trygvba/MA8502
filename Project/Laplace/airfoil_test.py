@@ -153,7 +153,7 @@ def loadfunc(x,y):
 
 ###########################
 # Order of GLL-points:
-N = 20
+N = 50
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N, xis)
 
