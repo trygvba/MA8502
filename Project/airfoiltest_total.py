@@ -2,8 +2,9 @@
 # on an advection-diffusion equation.
 
 import sys
-sys.path.insert(0, '../Mesh')
-sys.path.insert(0, '../Laplace')
+sys.path.insert(0, 'Mesh')
+sys.path.insert(0, 'Laplace')
+sys.path.insert(0, 'Convection')
 
 import time
 
@@ -18,10 +19,13 @@ import structured_grids as sg
 import quadrature_nodes as qn
 import gordon_hall as gh
 import convection_functions as cf
+import divergence_functions as df
+
 
 # For plotting:
 from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
+import matplotlib.pylab as pl
 #############################################
 #       LET'S GET STARTED:
 #############################################
@@ -31,7 +35,7 @@ def loadfunc(x,y):
     return 1.
 
 def v1(x,y):
-    return 1.
+    return 0.
 
 v1 = np.vectorize(v1)
 
@@ -46,8 +50,12 @@ v2 = np.vectorize(v2)
 
 ##mesh inputs
 thetadef = 30 #angle between elements 3,4 etc
+num_el = 6
 
 #constants
+mu = 0.5
+alpha = np.pi/10
+v = 100
 R = 507.79956092981
 yrekt = 493.522687570593
 xmax = 501.000007802345
@@ -175,6 +183,7 @@ def gamma_64(xi):
 
 # Order of GLL-points:
 N = 20
+N_tot = N**2
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N, xis)
 xis_p = xis[1:-1]
@@ -183,8 +192,9 @@ weights_p = weights[1:-1]
 X, Y = np.meshgrid(xis,xis)
 X_p, Y_p = np.meshgrid(xis_p,xis_p)
 #Local to global matrix:
-Local_to_global = sg.local_to_global_top_down(7, 2, N, N, patch=True, num_patch=1)
-dofs = np.max(Local_to_global)+1
+loc_glob = sg.local_to_global_top_down(7, 2, N, N, patch=True, num_patch=1)
+loc_glob_p = sg.local_to_global_pressure(7, 2, N, N)
+dofs = np.max(loc_glob)+1
 
 # Dimensions of resulting matrix: (not really sure how these go)
 ydim = N
@@ -208,6 +218,7 @@ X3, Y3 = gh.gordon_hall_grid( gamma_31, gamma_32, gamma_33, gamma_34, xis, xis)
 X4, Y4 = gh.gordon_hall_grid( gamma_41, gamma_42, gamma_43, gamma_44, xis, xis)
 X5, Y5 = gh.gordon_hall_grid( gamma_51, gamma_52, gamma_53, gamma_54, xis, xis)
 X6, Y6 = gh.gordon_hall_grid( gamma_61, gamma_62, gamma_63, gamma_64, xis, xis)
+
 ######################################################################################################################################
 ######################################################################################################################################
 ######################################################################################################################################
@@ -283,7 +294,9 @@ U2 = v2(X,Y).ravel()
 
 # Now we're closing in on some shit. Prepare to ASSEMBLE!
 # Assemble stiffness matrix:
+t1 = time.time()
 print "Assembling stiffness matrix."
+t2= time.time()
 A1 = lp.assemble_local_stiffness_matrix(D, G_tot1, N, weights)
 A2 = lp.assemble_local_stiffness_matrix(D, G_tot2, N, weights)
 A3 = lp.assemble_local_stiffness_matrix(D, G_tot3, N, weights)
@@ -291,101 +304,55 @@ A4 = lp.assemble_local_stiffness_matrix(D, G_tot4, N, weights)
 A5 = lp.assemble_local_stiffness_matrix(D, G_tot5, N, weights)
 A6 = lp.assemble_local_stiffness_matrix(D, G_tot6, N, weights)
 A = np.zeros( (dofs, dofs) )
-A[np.ix_(Local_to_global[0], Local_to_global[0]) ] += A1
-A[np.ix_(Local_to_global[1], Local_to_global[1]) ] += A2
-A[np.ix_(Local_to_global[2], Local_to_global[2]) ] += A3
-A[np.ix_(Local_to_global[3], Local_to_global[3]) ] += A4
-A[np.ix_(Local_to_global[4], Local_to_global[4]) ] += A5
-A[np.ix_(Local_to_global[5], Local_to_global[5]) ] += A6
+A[np.ix_(loc_glob[0], loc_glob[0]) ] += A1
+A[np.ix_(loc_glob[1], loc_glob[1]) ] += A2
+A[np.ix_(loc_glob[2], loc_glob[2]) ] += A3
+A[np.ix_(loc_glob[3], loc_glob[3]) ] += A4
+A[np.ix_(loc_glob[4], loc_glob[4]) ] += A5
+A[np.ix_(loc_glob[5], loc_glob[5]) ] += A6
 print "Time to make stiffness matrix", time.time()-t2
-
-# Assemble constant convection matrix
-print "Assembling convection matrices."
-t1 = time.time()
-C = np.zeros( (dofs, dofs) )
-Cc1,Cc2= cf.assemble_const_convection_matrix(X_xi, X_eta, Y_xi, Y_eta, D, N, weights)
-C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2,N_tot)
-print "Time to make convection matrices: ", time.time()-t1
-# Get local-to-global mapping:
-loc_glob = sg.local_to_global_top_down(7, 2, N, N, patch=True, num_patch=1)
-
-# Number of elements:
-num_el = loc_glob.shape[0]
-
-# Degrees of freedom:
-dofs = np.max(loc_glob)+1
-# Points per element:
-el_points = N**2
-
-print "Number of elements: ", num_el
-print "Degress of freedom: ", dofs
-
-###########################################
-#       OFF TO THE ASSEMBLY PART:
-###########################################
-
-# Initialise loading vector:
-F = np.zeros( dofs )
-
-
-# Initialise six v-vectors:
-vec1 = np.zeros( 2*el_points)
-vec2 = np.zeros( 2*el_points)
-vec3 = np.zeros( 2*el_points)
-vec4 = np.zeros( 2*el_points)
-vec5 = np.zeros( 2*el_points)
-vec6 = np.zeros( 2*el_points)
-
-#ASSEMBLE LAPLACE OPERATOR 
-#ALREADY ASSEMBLED, BITCH
-
-# LET'S BEGIN ITERATING OVER EACH ELEMENT:
-print "Starting assembly..."
-t1 = time.time()
-#for K in range(num_el):
-#indx = K%Nx
-#indy = K/Nx
-
-    #Get local coordinates:
-    #X[K], Y[K] = gh.gordon_hall_straight_line(indy, indx, X_el, Y_el, xis, N)
-    
-#X_xi = np.dot(X[K],D)
-#X_eta = np.dot(X[K].T,D)
-#Y_xi = np.dot(Y[K], D)
-#Y_eta = np.dot(Y[K].T, D)
-
-
-    # Insert contribution to stiffness matrix:
-    #A[np.ix_(loc_glob[K],loc_glob[K])] += lp.assemble_local_stiffness_matrix(D, G_tot, N, weights)
-
-    # Insert contribution to convection matrix:
-vec1[:el_points] = v1(X1,Y1).ravel()
-vec1[el_points:] = v2(X1,Y1).ravel()
-vec2[:el_points] = v1(X2,Y2).ravel()
-vec2[el_points:] = v2(X2,Y2).ravel()
-vec3[:el_points] = v1(X3,Y3).ravel()
-vec3[el_points:] = v2(X3,Y3).ravel()
-vec4[:el_points] = v1(X4,Y4).ravel()
-vec4[el_points:] = v2(X4,Y4).ravel()
-vec5[:el_points] = v1(X5,Y5).ravel()
-vec5[el_points:] = v2(X5,Y5).ravel()
-vec6[:el_points] = v1(X6,Y6).ravel()
-vec6[el_points:] = v2(X6,Y6).ravel()
 #need U1,U2 for each submatrix
+U1_1,U2_1 = U1,U2
+U1_2,U2_2 = U1,U2
+U1_3,U2_3 = U1,U2
+U1_4,U2_4 = U1,U2
+U1_5,U2_5 = U1,U2
+U1_6,U2_6 = U1,U2
+t2 = time.time()
 Cc1_1,Cc2_1= cf.assemble_const_convection_matrix(np.dot(X1,D), np.dot(X1.T,D), np.dot(Y1, D), np.dot(Y1.T, D), D, N, weights) #_1
-C1_1,C2_1 = cf.update_convection_matrix(U1_1,U2_1,Cc1_1,Cc2_1,N_tot)
 Cc1_2,Cc2_2= cf.assemble_const_convection_matrix(np.dot(X2,D), np.dot(X2.T,D), np.dot(Y2, D), np.dot(Y2.T, D), D, N, weights) #_1
-C1_2,C2_2 = cf.update_convection_matrix(U1_2,U2_2,Cc1_2,Cc2_2,N_tot)
 Cc1_3,Cc2_3= cf.assemble_const_convection_matrix(np.dot(X3,D), np.dot(X3.T,D), np.dot(Y3, D), np.dot(Y3.T, D), D, N, weights) #_1
-C1_3,C2_3 = cf.update_convection_matrix(U1_3,U2_3,Cc1_3,Cc2_3,N_tot)
 Cc1_4,Cc2_4= cf.assemble_const_convection_matrix(np.dot(X4,D), np.dot(X4.T,D), np.dot(Y4, D), np.dot(Y4.T, D), D, N, weights) #_1
-C1_4,C2_4 = cf.update_convection_matrix(U1_4,U2_4,Cc1_4,Cc2_4,N_tot)
 Cc1_5,Cc2_5= cf.assemble_const_convection_matrix(np.dot(X5,D), np.dot(X5.T,D), np.dot(Y5, D), np.dot(Y5.T, D), D, N, weights) #_1
-C1_5,C2_5 = cf.update_convection_matrix(U1_5,U2_5,Cc1_5,Cc2_5,N_tot)
 Cc1_6,Cc2_6= cf.assemble_const_convection_matrix(np.dot(X6,D), np.dot(X6.T,D), np.dot(Y6, D), np.dot(Y6.T, D), D, N, weights) #_1
+
+Cc1 = np.zeros( (dofs, dofs) ) #total C-matrix x-dir
+Cc2 = np.zeros( (dofs, dofs) )
+
+Cc1[np.ix_(loc_glob[0], loc_glob[0])] += Cc1_1
+Cc2[np.ix_(loc_glob[0], loc_glob[0])] += Cc2_1
+Cc1[np.ix_(loc_glob[1], loc_glob[1])] += Cc1_2
+Cc2[np.ix_(loc_glob[1], loc_glob[1])] += Cc2_2
+Cc1[np.ix_(loc_glob[2], loc_glob[2])] += Cc1_3
+Cc2[np.ix_(loc_glob[2], loc_glob[2])] += Cc2_3
+Cc1[np.ix_(loc_glob[3], loc_glob[3])] += Cc1_4
+Cc2[np.ix_(loc_glob[3], loc_glob[3])] += Cc2_4
+Cc1[np.ix_(loc_glob[4], loc_glob[4])] += Cc1_5
+Cc2[np.ix_(loc_glob[4], loc_glob[4])] += Cc2_5
+Cc1[np.ix_(loc_glob[5], loc_glob[5])] += Cc1_6
+Cc2[np.ix_(loc_glob[5], loc_glob[5])] += Cc2_6
+
+# UPDATING #########################
+C1_1,C2_1 = cf.update_convection_matrix(U1_1,U2_1,Cc1_1,Cc2_1,N_tot)
+C1_2,C2_2 = cf.update_convection_matrix(U1_2,U2_2,Cc1_2,Cc2_2,N_tot)
+C1_3,C2_3 = cf.update_convection_matrix(U1_3,U2_3,Cc1_3,Cc2_3,N_tot)
+C1_4,C2_4 = cf.update_convection_matrix(U1_4,U2_4,Cc1_4,Cc2_4,N_tot)
+C1_5,C2_5 = cf.update_convection_matrix(U1_5,U2_5,Cc1_5,Cc2_5,N_tot)
 C1_6,C2_6 = cf.update_convection_matrix(U1_6,U2_6,Cc1_6,Cc2_6,N_tot)
+
 C1 = np.zeros( (dofs, dofs) ) #total C-matrix x-dir
 C2 = np.zeros( (dofs, dofs) )
+
 C1[np.ix_(loc_glob[0], loc_glob[0])] += C1_1
 C2[np.ix_(loc_glob[0], loc_glob[0])] += C2_1
 C1[np.ix_(loc_glob[1], loc_glob[1])] += C1_2
@@ -399,157 +366,172 @@ C2[np.ix_(loc_glob[4], loc_glob[4])] += C2_5
 C1[np.ix_(loc_glob[5], loc_glob[5])] += C1_6
 C2[np.ix_(loc_glob[5], loc_glob[5])] += C2_6
 
+print "Time to make convectino matrices", time.time()-t2
+
 
 # Assemble local divergence matrix
 print "Assembling divergence matrix."
-t1 = time.time()
-B1 = df.assemble_local_divergence_matrix(np.dot(X1,D), np.dot(X1.T,D), np.dot(Y1, D), np.dot(Y1.T, D), P_evals, D, weights, N)
-B2 = df.assemble_local_divergence_matrix(np.dot(X2,D), np.dot(X2.T,D), np.dot(Y2, D), np.dot(Y2.T, D), P_evals, D, weights, N)
-B3 = df.assemble_local_divergence_matrix(np.dot(X3,D), np.dot(X3.T,D), np.dot(Y3, D), np.dot(Y3.T, D), P_evals, D, weights, N)
-B4 = df.assemble_local_divergence_matrix(np.dot(X4,D), np.dot(X4.T,D), np.dot(Y4, D), np.dot(Y4.T, D), P_evals, D, weights, N)
-B5 = df.assemble_local_divergence_matrix(np.dot(X5,D), np.dot(X5.T,D), np.dot(Y5, D), np.dot(Y5.T, D), P_evals, D, weights, N)
-B6 = df.assemble_local_divergence_matrix(np.dot(X6,D), np.dot(X6.T,D), np.dot(Y6, D), np.dot(Y6.T, D), P_evals, D, weights, N)
-B = np.zeros( (dofs, dofs-2) )
-B[np.ix_(loc_glob[0], loc_glob[0])] += B1
-B[np.ix_(loc_glob[1], loc_glob[1])] += B2
-B[np.ix_(loc_glob[2], loc_glob[2])] += B3
-B[np.ix_(loc_glob[3], loc_glob[3])] += B4
-B[np.ix_(loc_glob[4], loc_glob[4])] += B5
-B[np.ix_(loc_glob[5], loc_glob[5])] += B6
+B_loc = np.zeros((num_el,(N-2)**2,2*N**2))
+B_loc = np.zeros((num_el,2*N**2,(N-2)**2))
+t2 = time.time()
+B_loc[0] = df.assemble_local_divergence_matrix(np.dot(X1,D), np.dot(X1.T,D), np.dot(Y1, D), np.dot(Y1.T, D), P_evals, D, weights, N)
+B_loc[1] = df.assemble_local_divergence_matrix(np.dot(X2,D), np.dot(X2.T,D), np.dot(Y2, D), np.dot(Y2.T, D), P_evals, D, weights, N)
+B_loc[2] = df.assemble_local_divergence_matrix(np.dot(X3,D), np.dot(X3.T,D), np.dot(Y3, D), np.dot(Y3.T, D), P_evals, D, weights, N)
+B_loc[3] = df.assemble_local_divergence_matrix(np.dot(X4,D), np.dot(X4.T,D), np.dot(Y4, D), np.dot(Y4.T, D), P_evals, D, weights, N)
+B_loc[4] = df.assemble_local_divergence_matrix(np.dot(X5,D), np.dot(X5.T,D), np.dot(Y5, D), np.dot(Y5.T, D), P_evals, D, weights, N)
+B_loc[5] = df.assemble_local_divergence_matrix(np.dot(X6,D), np.dot(X6.T,D), np.dot(Y6, D), np.dot(Y6.T, D), P_evals, D, weights, N)
+
+# Get local-to-global mapping:
+B = np.zeros((2*dofs,num_el*(N-2)**2))
+for i in range(num_el):
+    dofx = loc_glob[i]
+    dofy = loc_glob[i] + dofs
+    dofp = loc_glob_p[i]
+    B[np.ix_(np.hstack((dofx,dofy)),dofp)] += B_loc[i]
+print "Time to make divergence matrices: ", time.time()-t2
+
+#######################################################################################
+#######################################################################################
+#######################################################################################
+############## MAKING THINGS GLOBALLY!!! ##############################################
+#######################################################################################
+#######################################################################################
+#######################################################################################
 
 
-print "Time to make divergence matrices: ", time.time()-t1
 
-# Assemble loading vector:
-print "Assembling loading vector."
-F1 = lp.assemble_loading_vector(X, Y, f1, Jac, weights)
-F2 = lp.assemble_loading_vector(X, Y, f2, Jac, weights)
-F3 = lp.assemble_loading_vector(X_p, Y_p, f3, Jac, weights_p)
+# Defining S - Matrix
+S1 = C1 + mu*A
+S2 = C2 + mu*A
+S = la.block_diag(S1,S2)
+W = np.bmat([[S , -B],
+            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
 
 
+F = np.zeros(num_el*(N-2)**2 + 2*dofs)
 
-print "Assembling loading vector."
-F1 = lp.assemble_loading_vector(X1, Y1, loadfunc, Jac1, weights)
-F2 = lp.assemble_loading_vector(X2, Y2, loadfunc, Jac2, weights)
-F3 = lp.assemble_loading_vector(X3, Y3, loadfunc, Jac3, weights)
-F4 = lp.assemble_loading_vector(X4, Y4, loadfunc, Jac4, weights)
-F5 = lp.assemble_loading_vector(X5, Y5, loadfunc, Jac5, weights)
-F6 = lp.assemble_loading_vector(X6, Y6, loadfunc, Jac6, weights)
-
-F[Local_to_global[0]] += F1
-F[Local_to_global[1]] += F2
-F[Local_to_global[2]] += F3
-F[Local_to_global[3]] += F4
-F[Local_to_global[4]] += F5
-F[Local_to_global[5]] += F6
 print "Assembly time: ", time.time()-t1, ", nice job, get yourself a beer."
 
 
-##########################################
-#   BOUNDARY CONDITIONS:
-##########################################
-S = C + mu*A
-
-# Upper part:
-for k in range(6):
-    indices = Local_to_global[k,-N:]
-    S[indices] = 0.
+#Imposing airfoil boundary:
+for i in range(1,5):
+    #Lower side of each element:
+    indices = loc_glob[i,:N]
+    indices = np.hstack( (indices, indices+dofs) )
     F[indices] = 0.
-    S[indices,indices] = 1.
+    W[indices] = 0.
+    W[indices, indices] = 1.
 
-# Lower part:
-for k in range(1,5):
-    indices = Local_to_global[k,:N]
-    S[indices] = 0.
-    F[indices] = 1.
-    S[indices, indices] = 1.
+# Imposing inflow:
+for i in range(2,4):
+    # Upper side of each element:
+    indices = loc_glob[i,(N-1)*N:]
+    
+    # For x-direction:
+    F[indices] = v*np.cos(alpha)
+    W[indices] = 0.
+    W[indices, indices] = 1.
 
-#Left part of the first element:
-indices = Local_to_global[0,::N]
-S[indices] = 0.
-F[indices] = 0.
-S[indices,indices] = 1.
+    # For y-direction:
+    indices =indices+dofs
+    F[indices] = v*np.sin(alpha)
+    W[indices] = 0.
+    W[indices, indices] = 1.
 
-# Right part of the last element:
-indices = Local_to_global[-1, N-1 + N*np.arange(N)]
-S[indices] = 0.
-F[indices] = 0.
-S[indices, indices] = 1.
-
-print "Now for the Direchlet stuff"
-
-# Dirichlet on outer part: DO SOMETHING WITH THIS
-#for i in range(Nx):
-#    # We want the top part of these elements:
-#    indices = loc_glob[Nx*(Ny-1)+i,N*(N-1):]
-#    S[indices] = 0.
-#    S[indices, indices] = 1.
-#    F[indices] = 0.
-
-# Dirichlet on the rightmost part of the boundary:
-# ACTUALLY: Let's just keep homogeneous Neumann here,
-# The discretisation of he wake is not suited for a
-# boundary layer here.
-
-#for i in range(Ny):
-#    K = i*Nx
-#    indices = loc_glob[K, ::N]
-#    S[indices] = 0.
-#    S[indices, indices] = 1.
-#    F[indices] = 0.
-#
-#    K = i*Nx+Nx-1
-#    tempind = N*np.arange(N)+N-1
-#    indices = loc_glob[K, tempind]
-#    S[indices] = 0.
-#    S[indices, indices] = 1.
-#    F[indices] = 0.
+m = N-3
+W[2*dofs+m,:] = 0.
+W[2*dofs+m,2*dofs+m] = 1.
+F[2*dofs+m] = 0.
 
 
 ################################
 #       SOLVING:
 ################################
-print "Starting to solve..."
-t1 = time.time()
-U = la.solve(S,F)
-print "Time to solve: ", time.time()-t1
+eps = 1e-8
+error = 1
+counter = 1
+N_it = 5
+UVP = la.solve(W,F)
+U1 = UVP[:dofs]
+U2 = UVP[dofs:2*dofs]
+
+print "Time to solve              ", time.time()-t1
+#U1 = la.solve(S1, F1)
+#U2 = la.solve(S2, F2)
+
+while (error>eps and counter <= N_it):
+    t1 = time.time()
+    print "Solving for the", counter ,"th time" 
+    C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2,dofs)
+    S1 = C1 + mu*A
+    S2 = C2 + mu*A
+    S = la.block_diag(S1,S2)
+    W = np.bmat([[S , -B],
+                [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
+
+#Imposing airfoil boundary:
+    for i in range(1,5):
+        #Lower side of each element:
+        indices = loc_glob[i,:N]
+        indices = np.hstack( (indices, indices+dofs) )
+        W[indices] = 0.
+        W[indices, indices] = 1.
+
+# Imposing inflow:
+    for i in range(2,4):
+        # Upper side of each element:
+        indices = loc_glob[i,(N-1)*N:]
+        
+        # For x-direction:
+        W[indices] = 0.
+        W[indices, indices] = 1.
+
+        # For y-direction:
+        indices =indices+dofs
+        W[indices] = 0.
+        W[indices, indices] = 1.
+    m = N-3
+    W[2*dofs+m,:] = 0.
+    W[2*dofs+m,2*dofs+m] = 1.
+    F[2*dofs+m] = 0.
+
+    print "Time to update", time.time()-t1
+    print "Starting to solve..."
+    t1 = time.time()
+    UVP_new = la.solve(W,F)
+    print "Time to solve: ", time.time()-t1
+    error = float(la.norm(UVP_new - UVP))/la.norm(UVP)
+    UVP = UVP_new
+    U1 = UVP_new[:dofs]
+    U2 = UVP_new[dofs:2*dofs]
+    counter += 1
+    print "Time to solve:             ", time.time()-t1
+    print "error :                    ", error
 
 ################################
 #       PLOTTING:
 ################################
-U_min, U_max = -np.abs(U).max(), np.abs(U).max()
-#fig = plt.figure()
-#ax = fig.add_subplot(111)
+# Making global X and Y coordinates
+X = np.zeros((dofs,dofs))
+Y = np.zeros((dofs,dofs))
 
-#for K in range(num_el):
-#    temp = U[loc_glob[K]].reshape((N,N))
-temp = U[loc_glob[0]].reshape((N,N))
-plt.pcolormesh(X1,Y1, temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
-temp = U[loc_glob[1]].reshape((N,N))
-plt.pcolormesh(X2,Y2, temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
-temp = U[loc_glob[2]].reshape((N,N))
-plt.pcolormesh(X3,Y3, temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
-temp = U[loc_glob[3]].reshape((N,N))
-plt.pcolormesh(X4,Y4, temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
-temp = U[loc_glob[4]].reshape((N,N))
-plt.pcolormesh(X5,Y5, temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
-temp = U[loc_glob[5]].reshape((N,N))
-plt.pcolormesh(X6,Y6, temp[:-1,:-1], cmap='RdBu', vmin=U_min, vmax=U_max)
+X[np.ix_(loc_glob[0], loc_glob[0]) ] =X1.ravel()
+X[np.ix_(loc_glob[1], loc_glob[1]) ] =X2.ravel()
+X[np.ix_(loc_glob[2], loc_glob[2]) ] =X3.ravel()
+X[np.ix_(loc_glob[3], loc_glob[3]) ] =X4.ravel()
+X[np.ix_(loc_glob[4], loc_glob[4]) ] =X5.ravel()
+X[np.ix_(loc_glob[5], loc_glob[5]) ] =X6.ravel()
 
-for i in range(N):
-	plt.plot(X1[:,i], Y1[:,i],'b')
-	plt.plot(X1[i,:], Y1[i,:], 'b')
-	plt.plot(X2[:,i], Y2[:,i],'b')
-	plt.plot(X2[i,:], Y2[i,:], 'b')
-	plt.plot(X3[:,i], Y3[:,i],'b')
-	plt.plot(X3[i,:], Y3[i,:], 'b')
-	plt.plot(X4[:,i], Y4[:,i],'b')
-	plt.plot(X4[i,:], Y4[i,:], 'b')
-	plt.plot(X5[:,i], Y5[:,i],'b')
-	plt.plot(X5[i,:], Y5[i,:], 'b')
-	plt.plot(X6[:,i], Y6[:,i],'b')
-	plt.plot(X6[i,:], Y6[i,:], 'b')
+Y[np.ix_(loc_glob[0], loc_glob[0]) ] =Y1.ravel()
+Y[np.ix_(loc_glob[1], loc_glob[1]) ] =Y2.ravel()
+Y[np.ix_(loc_glob[2], loc_glob[2]) ] =Y3.ravel()
+Y[np.ix_(loc_glob[3], loc_glob[3]) ] =Y4.ravel()
+Y[np.ix_(loc_glob[4], loc_glob[4]) ] =Y5.ravel()
+Y[np.ix_(loc_glob[5], loc_glob[5]) ] =Y6.ravel()
 
-plt.show()
-
-
+# QUIVERPLOT #
+pl.quiver(X, Y, U1, U2, pivot='middle', scale=10, units='x')
+pl.xlabel('$x$')
+pl.ylabel('$y$')
+pl.axis('image')
+pl.show()

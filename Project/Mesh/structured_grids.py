@@ -205,7 +205,6 @@ def local_to_global_top_down(idim, jdim, nx, ny, patch=False, num_patch=0):
         #Unravel indices:
         G[k,:] = grid_indices[i:(i+ny), j:(j+nx)].ravel()
 
-
     return G
 
 def local_to_global_pressure(idim, jdim, nx, ny):
