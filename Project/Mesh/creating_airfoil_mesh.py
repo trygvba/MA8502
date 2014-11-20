@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 ##mesh inputs
 thetadef = 30 #angle between elements 3,4 etc
 ratio = 10 #ratio of GLL-points in x,y: y/x = ratio
-gllx = 17 #number of GLL-points in x
+gllx = 50 #number of GLL-points in x
 
 #constants
 R = 507.79956092981
@@ -144,7 +144,8 @@ def gamma_64(xi):
 
 #Order of GLL-points:
 nx = gllx
-ny = ratio*nx
+#ny = ratio*nx
+ny = nx
 xis = qn.GLL_points(nx)
 etas = qn.GLL_points(ny)
 
