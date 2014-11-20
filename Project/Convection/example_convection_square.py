@@ -46,12 +46,12 @@ def v2(x,y):
 v2 = np.vectorize(v2)
 
 # Defining Diffusion constant
-mu = 0.01
+mu = 0.00001
 
 
 #####################################
 ####### Generating mesh #############
-N = 40
+N = 35
 N_tot = N**2
 xis = qn.GLL_points(N)
 xis_p = xis[1:-1]
@@ -105,8 +105,6 @@ print "Assembling divergence matrix."
 t1 = time.time()
 B = df.assemble_local_divergence_matrix(X_xi, X_eta, Y_xi, Y_eta, P_evals, D, weights, N)
 print "Time to make divergence matrices: ", time.time()-t1
-pl.spy(B)
-pl.show()
 
 # Assemble loading vector:
 print "Assembling loading vector."
@@ -160,9 +158,9 @@ for i in range(N):
     F2[N*(N-1)+i] = 0.
 
     #Left side:
-    S2[i*N,:] = 0.
-    S2[i*N, i*N] = 1.
-    F2[i*N] = 0.
+#    S2[i*N,:] = 0.
+#    S2[i*N, i*N] = 1.
+#    F2[i*N] = 0.
 
     #Right side:
 #   S2[i*N+N-1,:] = 0.
@@ -231,8 +229,8 @@ while (error>eps and counter <= N_it):
       S2[N*(N-1)+i, N*(N-1)+i] = 1.
 
       #Left side:
-      S2[i*N,:] = 0.
-      S2[i*N, i*N] = 1.
+#      S2[i*N,:] = 0.
+#      S2[i*N, i*N] = 1.
 
       #Right side:
 #      S2[i*N+N-1,:] = 0.
