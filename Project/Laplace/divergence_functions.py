@@ -22,8 +22,8 @@ def pressure_basis_point_evaluations(xis, N, D):
         # Set the kronecker delta:
         P_evals[k,k+1] = 1.
         # Set the boundary points:
-        P_evals[k,0] = (1.-xis[k]**2)*D[k,0]/2.
-        P_evals[k,-1] = (xis[k]**2-1)*D[k,-1]/2.
+        P_evals[k,0] = (1.-xis[k+1]**2)*D[k+1,0]/2.
+        P_evals[k,-1] = (xis[k+1]**2-1.)*D[k+1,-1]/2.
 
     return P_evals
 

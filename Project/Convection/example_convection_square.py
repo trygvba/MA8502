@@ -46,12 +46,12 @@ def v2(x,y):
 v2 = np.vectorize(v2)
 
 # Defining Diffusion constant
-mu = 0.001
+mu = 0.01
 
 
 #####################################
 ####### Generating mesh #############
-N = 50
+N = 40
 N_tot = N**2
 xis = qn.GLL_points(N)
 xis_p = xis[1:-1]
@@ -105,8 +105,8 @@ print "Assembling divergence matrix."
 t1 = time.time()
 B = df.assemble_local_divergence_matrix(X_xi, X_eta, Y_xi, Y_eta, P_evals, D, weights, N)
 print "Time to make divergence matrices: ", time.time()-t1
-#pl.spy(B)
-#pl.show()
+pl.spy(B)
+pl.show()
 
 # Assemble loading vector:
 print "Assembling loading vector."
@@ -141,7 +141,7 @@ for i in range(N):
     #Left side:
     S1[i*N,:] = 0.
     S1[i*N, i*N] = 1.
-    F1[i*N] = 1. 
+    F1[i*N] = 1.-Y[i,0]**2
 
     #Right side:
 #   S1[i*N+N-1,:] = 0.
@@ -179,12 +179,12 @@ F = np.append(F1,np.append(F2,F3))
 W = np.bmat([[S , -B],
             [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
 
-m = 15;
+m = N-3
 W[2*N**2+m,:] = 0.
 W[2*N**2+m,2*N**2+m] = 1.
 F[2*N**2+m] = 0.
 
-eps = 0.00001
+eps = 1e-8
 error = 1
 counter = 1
 N_it = 30
@@ -247,7 +247,8 @@ while (error>eps and counter <= N_it):
   print "Time to update total matrix", time.time()-t1
   t1 = time.time()
   UVP_new = la.solve(W, F)
-  error = float(la.norm(UVP_new - UVP))/la.norm(UVP)
+#  error = float(la.norm(UVP_new - UVP))/la.norm(UVP)
+  error = np.max(UVP_new - UVP)
   UVP = UVP_new
   U1 = UVP[:N**2]
   U2 = UVP[N**2:2*N**2]
