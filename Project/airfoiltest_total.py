@@ -53,7 +53,7 @@ thetadef = 25 #angle between elements 3,4 etc
 num_el = 6
 
 #constants
-mu = 0.01
+mu = 0.1
 N = 30
 alpha = np.pi/10.
 v = 1.
