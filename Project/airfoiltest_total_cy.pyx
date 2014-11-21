@@ -53,9 +53,9 @@ thetadef = 25 #angle between elements 3,4 etc
 num_el = 6
 
 #constants
-mu = 100
-N = 20 #polynomial degree
-N_it = 3 #number of iteration
+mu = 1
+N = 30 #polynomial degree
+N_it = 5 #number of iteration
 eps = 1e-8 #error tolerance
 alpha = np.pi/10.
 v = 1. #inflow velocity
@@ -296,6 +296,7 @@ U2 = v2(X,Y).ravel()
 
 # Now we're closing in on some shit. Prepare to ASSEMBLE!
 # Assemble stiffness matrix:
+t1 = time.time()
 print "Assembling stiffness matrix."
 t2= time.time()
 A1 = lp.assemble_local_stiffness_matrix(D, G_tot1, N, weights)
@@ -467,13 +468,12 @@ while (error>eps and counter <= N_it):
     t1 = time.time()
     print "Solving for the", counter ,"th time" 
     C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2,dofs)
-    #S1 = C1 + mu*A
-    #S2 = C2 + mu*A
-    #S = la.block_diag(S1,S2)
-    #W = np.bmat([[S , -B],
-    #            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
-    W = np.bmat([[la.block_diag(C1 + mu*A,C2 + mu*A) , -B],
-            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
+    S1 = C1 + mu*A
+    S2 = C2 + mu*A
+    S = la.block_diag(S1,S2)
+    W = np.bmat([[S , -B],
+                [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
+
 #Imposing airfoil boundary:
     for i in range(1,5):
         #Lower side of each element:
