@@ -32,7 +32,7 @@ import matplotlib.pylab as pl
 
 # Preliminary functions:
 def loadfunc(x,y):
-    return 1.
+    return 0.
 
 def v1(x,y):
     return 0.
@@ -49,14 +49,14 @@ v2 = np.vectorize(v2)
 ##############################################
 
 ##mesh inputs
-thetadef = 30 #angle between elements 3,4 etc
+thetadef = 25 #angle between elements 3,4 etc
 num_el = 6
 
 #constants
 mu = 0.01
-N = 20
+N = 30
 alpha = np.pi/10.
-v = 100.
+v = 1.
 R = 507.79956092981
 yrekt = 493.522687570593
 xmax = 501.000007802345
@@ -428,7 +428,7 @@ for i in range(1,5):
 # Imposing inflow:
 for i in range(2,4): #was 2,4
     # Upper side of each element:
-    indices = loc_glob[i,(N-1)*N:]
+    indices = loc_glob[i,-N:]
     #indices = loc_glob[i,:N]
     # For x-direction:
     F[indices] = v*np.cos(alpha)
@@ -441,7 +441,7 @@ for i in range(2,4): #was 2,4
     W[indices] = 0.
     W[indices, indices] = 1.
 
-m = N-3
+m = 0
 W[2*dofs+m,:] = 0.
 W[2*dofs+m,2*dofs+m] = 1.
 F[2*dofs+m] = 0.
@@ -451,7 +451,7 @@ F[2*dofs+m] = 0.
 #       SOLVING:
 ################################
 
-error = 1
+error = 1.
 counter = 1
 UVP = la.solve(W,F)
 U1 = UVP[:dofs]
@@ -483,7 +483,7 @@ while (error>eps and counter <= N_it):
 # Imposing inflow:
     for i in range(2,4):
         # Upper side of each element:
-        indices = loc_glob[i,(N-1)*N:]
+        indices = loc_glob[i,-N:]
         #indices = loc_glob[i,:N]
         # For x-direction:
         W[indices] = 0.
@@ -518,14 +518,29 @@ while (error>eps and counter <= N_it):
 X = np.zeros((dofs,dofs))
 Y = np.zeros((dofs,dofs))
 
+
+fig = plt.figure(1)
 # QUIVERPLOT #
-pl.quiver(X1, Y1, U1[loc_glob[0]], U2[loc_glob[0]])
-pl.quiver(X2, Y2, U1[loc_glob[1]], U2[loc_glob[1]])
-pl.quiver(X3, Y3, U1[loc_glob[2]], U2[loc_glob[2]]) 
-pl.quiver(X4, Y4, U1[loc_glob[3]], U2[loc_glob[3]])
-pl.quiver(X5, Y5, U1[loc_glob[4]], U2[loc_glob[4]])
-pl.quiver(X6, Y6, U1[loc_glob[5]], U2[loc_glob[5]])
+plt.subplot(121)
+pl.quiver(X1, Y1, U1[loc_glob[0]].reshape( (N,N) ), U2[loc_glob[0]].reshape( (N,N) ))
+pl.quiver(X2, Y2, U1[loc_glob[1]].reshape( (N,N) ), U2[loc_glob[1]].reshape( (N,N) ))
+pl.quiver(X3, Y3, U1[loc_glob[2]].reshape( (N,N) ), U2[loc_glob[2]].reshape( (N,N) )) 
+pl.quiver(X4, Y4, U1[loc_glob[3]].reshape( (N,N) ), U2[loc_glob[3]].reshape( (N,N) ))
+pl.quiver(X5, Y5, U1[loc_glob[4]].reshape( (N,N) ), U2[loc_glob[4]].reshape( (N,N) ))
+pl.quiver(X6, Y6, U1[loc_glob[5]].reshape( (N,N) ), U2[loc_glob[5]].reshape( (N,N) ))
 pl.xlabel('$x$')
 pl.ylabel('$y$')
 pl.axis('image')
+
+
+# PRESSURE PLOT:
+P = UVP[2*dofs:]
+plt.subplot(122)
+ax = fig.add_subplot(122, projection='3d')
+ax.plot_wireframe(X1[1:-1,1:-1],Y1[1:-1,1:-1], P[loc_glob_p[0]].reshape( (N-2,N-2)))
+ax.plot_wireframe(X2[1:-1,1:-1],Y2[1:-1,1:-1], P[loc_glob_p[1]].reshape( (N-2,N-2)))
+ax.plot_wireframe(X3[1:-1,1:-1],Y3[1:-1,1:-1], P[loc_glob_p[2]].reshape( (N-2,N-2)))
+ax.plot_wireframe(X4[1:-1,1:-1],Y4[1:-1,1:-1], P[loc_glob_p[3]].reshape( (N-2,N-2)))
+ax.plot_wireframe(X5[1:-1,1:-1],Y5[1:-1,1:-1], P[loc_glob_p[4]].reshape( (N-2,N-2)))
+ax.plot_wireframe(X6[1:-1,1:-1],Y6[1:-1,1:-1], P[loc_glob_p[5]].reshape( (N-2,N-2)))
 pl.show()
