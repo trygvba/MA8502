@@ -12,7 +12,6 @@ import time
 import numpy as np
 import scipy.linalg as la
 import scipy.sparse as sparse
-import scipy.sparse.linalg as sla
 
 # Own modules:
 import laplace_functions as lp
@@ -32,32 +31,6 @@ import matplotlib.pylab as pl
 #       LET'S GET STARTED:
 #############################################
 
-# Order of GLL-points:
-N = 20
-mu = 10
-v = 1
-alpha = np.pi/20
-num_el = 6 # Number of elements
-N_it = 10
-eps = 1e-8
-# Reference element and weights for Velocity and pressure
-xis = qn.GLL_points(N)
-weights = qn.GLL_weights(N, xis)
-xis_p , weights_p = xis[1:-1], weights[1:-1]
-
-#Local to global matrix:
-loc_glob = sg.local_to_global_top_down(7, 2, N, N, patch=True, num_patch=1)
-loc_glob_p = sg.local_to_global_pressure(7, 2, N, N)
-dofs = np.max(loc_glob)+1
-
-# Dimensions of resulting matrix: (not really sure how these go)
-ydim = N
-xdim = N
-
-# Initialise coordinate matrices:
-
-t1 = time.time()
-
 # Preliminary functions:
 def loadfunc(x,y):
     return 0.
@@ -71,6 +44,38 @@ def v2(x,y):
     return 0.
 
 v2 = np.vectorize(v2)
+
+
+
+# Order of GLL-points:
+N = 10
+num_el = 6 # Number of elements
+N_it = 2
+eps = 1e-8
+xis = qn.GLL_points(N)
+weights = qn.GLL_weights(N, xis)
+xis_p = xis[1:-1]
+weights_p = weights[1:-1]
+
+#Local to global matrix:
+loc_glob = sg.local_to_global_top_down(7, 2, N, N, patch=True, num_patch=1)
+loc_glob_p = sg.local_to_global_pressure(7, 2, N, N)
+dofs = np.max(loc_glob)+1
+
+# Dimensions of resulting matrix: (not really sure how these go)
+ydim = N
+xdim = N
+
+#Total number of points:
+tot_points = N*N
+
+# Initialise coordinate matrices:
+X = np.zeros( tot_points )
+Y = np.zeros( tot_points )
+
+
+t1 = time.time()
+
 ######################### ASSEMBLING AS WE WALK ################## 
 ############### WILL SAVE A LOT OF MEMORY AND CODELINES!!! #######
 
@@ -91,10 +96,9 @@ Cc2 = np.zeros( (dofs, dofs) )
 C1 = np.zeros( (dofs, dofs) ) #total C-matrix x-dir
 C2 = np.zeros( (dofs, dofs) )
 B = np.zeros((2*dofs,num_el*(N-2)**2))  # Total B matrix
-tass= time.time()
+
 for i in range(num_el):
-    t1 = time.time()
-    print "Assembling the", i+1,"th Element..."
+    print "Assembling first Element..."
     X1, Y1 = gh.gordon_hall_grid( gm.gammas(i,1),gm.gammas(i,2),gm.gammas(i,3),gm.gammas(i,4), xis, xis)
     X1 = X1.reshape( (ydim, xdim) )
     Y1 = Y1.reshape( (ydim, xdim) )
@@ -117,24 +121,22 @@ for i in range(num_el):
     dofy = loc_glob[i] + dofs
     dofp = loc_glob_p[i]
     B[np.ix_(np.hstack((dofx,dofy)),dofp)] += B_loc
-    print "time to assemble one element:", time.time()-t1
 
 #Making global Convection matrix
-C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2)
+C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2,N)
 
-#Making global matrix
-W = np.bmat([[la.block_diag(C1 + mu*A,C2 + mu*A) , -B],
-            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]]) #hopefully more efficient
 
-print W.shape
+# Defining S - Matrix
+S = la.block_diag(S1,S2)
+W = np.bmat([[S , -B],
+            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
 
 
 F = np.zeros(num_el*(N-2)**2 + 2*dofs)
 
-print "Assembly time: ", time.time()-tass, ", nice job, get yourself a beer."
+print "Assembly time: ", time.time()-t1, ", nice job, get yourself a beer."
 
-print "Imposing boundary conditions and inflow..."
-tinflow = time.time()
+
 #Imposing airfoil boundary:
 for i in range(1,5):
     #Lower side of each element:
@@ -165,28 +167,32 @@ m = 0
 W[2*dofs+m,:] = 0.
 W[2*dofs+m,2*dofs+m] = 1.
 F[2*dofs+m] = 0.
-print "Imposing time:", time.time()-tinflow
 
 
 ################################
 #       SOLVING:
 ################################
-t1 = time.time()
-W=sparse.csr_matrix(W);
+
 error = 1.
 counter = 1
-UVP = sla.spsolve(W,F)
+UVP = la.solve(W,F)
 U1 = UVP[:dofs]
 U2 = UVP[dofs:2*dofs]
 
 print "Time to solve              ", time.time()-t1
+#U1 = la.solve(S1, F1)
+#U2 = la.solve(S2, F2)
 
 while (error>eps and counter <= N_it):
     t1 = time.time()
     print "Solving for the", counter ,"th time" 
-    C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2)
-    W = np.bmat([[la.block_diag(C1 + mu*A,C2 + mu*A) , -B],
-            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
+    C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2,dofs)
+    S1 = C1 + mu*A
+    S2 = C2 + mu*A
+    S = la.block_diag(S1,S2)
+    W = np.bmat([[S , -B],
+                [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
+
 #Imposing airfoil boundary:
     for i in range(1,5):
         #Lower side of each element:
@@ -213,42 +219,50 @@ while (error>eps and counter <= N_it):
     W[2*dofs+m,:] = 0.
     W[2*dofs+m,2*dofs+m] = 1.
     F[2*dofs+m] = 0.
-    W=sparse.csr_matrix(W);
+
     print "Time to update", time.time()-t1
     print "Starting to solve..."
     t1 = time.time()
-   
-    UVP_new = sla.spsolve(W,F)
+    UVP_new = la.solve(W,F)
     print "Time to solve: ", time.time()-t1
     error = float(la.norm(UVP_new - UVP))/la.norm(UVP)
     UVP = UVP_new
     U1 = UVP_new[:dofs]
     U2 = UVP_new[dofs:2*dofs]
     counter += 1
+    print "Time to solve:             ", time.time()-t1
     print "error :                    ", error
 
 ################################
 #       PLOTTING:
 ################################
 # Making global X and Y coordinates
+X = np.zeros((dofs,dofs))
+Y = np.zeros((dofs,dofs))
 
 
 fig = plt.figure(1)
 # QUIVERPLOT #
-P = UVP[2*dofs:]
-for i in range(num_el):
-  X,Y = gh.gordon_hall_grid(gm.gammas(i,1),gm.gammas(i,2),gm.gammas(i,3),gm.gammas(i,4), xis, xis)
-  plt.subplot(121)
-  pl.quiver(X,Y, U1[loc_glob[i]].reshape( (N,N) ), U2[loc_glob[i]].reshape( (N,N) ))
-  pl.xlabel('$x$')
-  pl.ylabel('$y$')
-  pl.axis('image')
+plt.subplot(121)
+pl.quiver(X1, Y1, U1[loc_glob[0]].reshape( (N,N) ), U2[loc_glob[0]].reshape( (N,N) ))
+pl.quiver(X2, Y2, U1[loc_glob[1]].reshape( (N,N) ), U2[loc_glob[1]].reshape( (N,N) ))
+pl.quiver(X3, Y3, U1[loc_glob[2]].reshape( (N,N) ), U2[loc_glob[2]].reshape( (N,N) )) 
+pl.quiver(X4, Y4, U1[loc_glob[3]].reshape( (N,N) ), U2[loc_glob[3]].reshape( (N,N) ))
+pl.quiver(X5, Y5, U1[loc_glob[4]].reshape( (N,N) ), U2[loc_glob[4]].reshape( (N,N) ))
+pl.quiver(X6, Y6, U1[loc_glob[5]].reshape( (N,N) ), U2[loc_glob[5]].reshape( (N,N) ))
+pl.xlabel('$x$')
+pl.ylabel('$y$')
+pl.axis('image')
+
 
 # PRESSURE PLOT:
+P = UVP[2*dofs:]
 plt.subplot(122)
 ax = fig.add_subplot(122, projection='3d')
-for i in range(num_el):
-  X,Y = gh.gordon_hall_grid(gm.gammas(i,1),gm.gammas(i,2),gm.gammas(i,3),gm.gammas(i,4), xis, xis)
-  ax.plot_wireframe(X[1:-1,1:-1],Y[1:-1,1:-1], P[loc_glob_p[i]].reshape( (N-2,N-2)))
-
+ax.plot_wireframe(X1[1:-1,1:-1],Y1[1:-1,1:-1], P[loc_glob_p[0]].reshape( (N-2,N-2)))
+ax.plot_wireframe(X2[1:-1,1:-1],Y2[1:-1,1:-1], P[loc_glob_p[1]].reshape( (N-2,N-2)))
+ax.plot_wireframe(X3[1:-1,1:-1],Y3[1:-1,1:-1], P[loc_glob_p[2]].reshape( (N-2,N-2)))
+ax.plot_wireframe(X4[1:-1,1:-1],Y4[1:-1,1:-1], P[loc_glob_p[3]].reshape( (N-2,N-2)))
+ax.plot_wireframe(X5[1:-1,1:-1],Y5[1:-1,1:-1], P[loc_glob_p[4]].reshape( (N-2,N-2)))
+ax.plot_wireframe(X6[1:-1,1:-1],Y6[1:-1,1:-1], P[loc_glob_p[5]].reshape( (N-2,N-2)))
 pl.show()
