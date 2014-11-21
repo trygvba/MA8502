@@ -38,7 +38,6 @@ def assemble_convection_matrix(u, x_xi, x_eta, y_xi, y_eta, D, N, weights):
     return C
 
 ######## NEW VERSION USED TO IMPLEMENT IN LOOPS ################ 
-######## OBS!! NEEDS TO BE TESTED PROPERLY!!!!! ################
 ################################################################
 
 def calculate_const_convection_element(I, J, x_xi, x_eta, y_xi, y_eta, D, N, weights) :
