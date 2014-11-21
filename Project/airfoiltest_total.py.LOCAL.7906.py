@@ -53,17 +53,10 @@ thetadef = 25 #angle between elements 3,4 etc
 num_el = 6
 
 #constants
-<<<<<<< HEAD
 mu = 1
 N = 30
-=======
-mu = 100
-N = 20 #polynomial degree
-N_it = 3 #number of iteration
-eps = 1e-8 #error tolerance
->>>>>>> 5c89543307cf0a9752637cc76c36dbc1debc3864
 alpha = np.pi/10.
-v = 1. #inflow velocity
+v = 1.
 R = 507.79956092981
 yrekt = 493.522687570593
 xmax = 501.000007802345
@@ -190,6 +183,8 @@ def gamma_64(xi):
 
 
 # Order of GLL-points:
+N_it = 2
+eps = 1e-8
 N_tot = N**2
 xis = qn.GLL_points(N)
 weights = qn.GLL_weights(N, xis)
@@ -301,6 +296,7 @@ U2 = v2(X,Y).ravel()
 
 # Now we're closing in on some shit. Prepare to ASSEMBLE!
 # Assemble stiffness matrix:
+t1 = time.time()
 print "Assembling stiffness matrix."
 t2= time.time()
 A1 = lp.assemble_local_stiffness_matrix(D, G_tot1, N, weights)
@@ -372,7 +368,7 @@ C2[np.ix_(loc_glob[4], loc_glob[4])] += C2_5
 C1[np.ix_(loc_glob[5], loc_glob[5])] += C1_6
 C2[np.ix_(loc_glob[5], loc_glob[5])] += C2_6
 
-print "Time to make convection matrices", time.time()-t2
+print "Time to make convectino matrices", time.time()-t2
 
 
 # Assemble local divergence matrix
@@ -407,13 +403,11 @@ print "Time to make divergence matrices: ", time.time()-t2
 
 
 # Defining S - Matrix
-#S1 = C1 + mu*A
-#S2 = C2 + mu*A
-#S = la.block_diag(S1,S2)
-#W = np.bmat([[S , -B],
-#            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
-W = np.bmat([[la.block_diag(C1 + mu*A,C2 + mu*A) , -B],
-            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]]) #hopefully more efficient
+S1 = C1 + mu*A
+S2 = C2 + mu*A
+S = la.block_diag(S1,S2)
+W = np.bmat([[S , -B],
+            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
 
 
 
@@ -422,8 +416,7 @@ F = np.zeros(num_el*(N-2)**2 + 2*dofs)
 
 print "Assembly time: ", time.time()-t1, ", nice job, get yourself a beer."
 
-print "Imposing boundary conditions and inflow..."
-tinflow = time.time()
+
 #Imposing airfoil boundary:
 for i in range(1,5):
     #Lower side of each element:
@@ -454,7 +447,7 @@ m = 0
 W[2*dofs+m,:] = 0.
 W[2*dofs+m,2*dofs+m] = 1.
 F[2*dofs+m] = 0.
-print "Imposing time:", time.time()-tinflow
+
 
 
 ################################
@@ -475,13 +468,12 @@ while (error>eps and counter <= N_it):
     t1 = time.time()
     print "Solving for the", counter ,"th time" 
     C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2,dofs)
-    #S1 = C1 + mu*A
-    #S2 = C2 + mu*A
-    #S = la.block_diag(S1,S2)
-    #W = np.bmat([[S , -B],
-    #            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
-    W = np.bmat([[la.block_diag(C1 + mu*A,C2 + mu*A) , -B],
-            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
+    S1 = C1 + mu*A
+    S2 = C2 + mu*A
+    S = la.block_diag(S1,S2)
+    W = np.bmat([[S , -B],
+                [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
+
 #Imposing airfoil boundary:
     for i in range(1,5):
         #Lower side of each element:
