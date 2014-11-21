@@ -10,19 +10,18 @@ sys.path.insert(0, 'Mesh/NASA')
 import time
 
 # Numpy and Scipy:
-import numpy as np
-import scipy.linalg as la
-import scipy.sparse as sparse
-import scipy.sparse.linalg as sla
+import numpy as np              #Numpy for general array creation and manipulation.
+import scipy.linalg as la       #For linear algebra
+import scipy.sparse as sparse   #For sparse matrices.
+import scipy.sparse.linalg as sla #For linalg on sparse matrices.
 
-# Own modules:
-import laplace_functions as lp
-import structured_grids as sg
-import quadrature_nodes as qn
-import gordon_hall as gh
-import convection_functions as cf
-import divergence_functions as df
-import gammas as gm
+# Our very own modules:
+import laplace_functions as lp  #Pertaining to the Laplace operator.
+import structured_grids as sg   #Function for dealing with structured grids.
+import quadrature_nodes as qn   #GLL and GL nodes and weights.
+import gordon_hall as gh        #Gordon-hall algorithm for deformed elements.
+import convection_functions as cf#Pertaining to the convection term.
+import divergence_functions as df#Pertaining to the divergence and gradient terms
 
 
 # For plotting:
@@ -38,9 +37,8 @@ N = 4               # Number of GLL-points in each direction.
 mu = 1.             # Viscosity.
 alpha = np.pi/20.   # Inflow angle.
 v = 1.              # Inflow velocity.
-
-
-
+N_it = 10           # Number of iterations.
+eps = 1e-8          # Error tolerance.
 
 ###################################
 # Reading NASA-grid:
@@ -209,25 +207,71 @@ for bc in range(patches,Nx-patches):
     W[indices+dofs,indices+dofs]= 1.
     F[indices+dofs] = v*np.sin(alpha)
 
+# Need to set on pressure point:
+m = 0
+csr_zero_rows(W, 2*dofs+m)
+W[2*dofs+m, 2*dofs+m] = 1.
 print "Time imposing boundary conditions: ", time.time()-time_bc
 print "Starting to solve..."
 time_solve = time.time()
 UVP = sla.spsolve(W,F)
 print "Time solving: ", time.time() - time_solve
 
+##########################################################################
+##########################################################################
+#################       ITERATIONS:         ##############################
+##########################################################################
+##########################################################################
 
+error = 1.
+counter = 1
 
+while(error>eps and counter <=N_it):
+    t1 = time.time()
+    print "Solving for the ", counter, "'th time."
+    
+    # Update convection matrices:
+    C1, C2 = cf.update_convection_matrix(UVP[:dofs], UVP[dofs:2*dofs], Cc1, Cc2)
+    W = sparse.bmat( [[sparse.block_diag(C1+mu*A, C2 + mu*A), -B],
+                      [B.T, None]], format='csr')
 
+    time_bc = time.time()
+    # Imposing Boundary Conditions:
+    for bc in range(patches, Nx-Patches):
+        # Airfoil (On the bottom of the grid, if you think about it):
+        indices = loc_glob[bc,:N]
+        csr_zero_rows(W, indices)
+        W[indices, indices] = 1.
+        # In y-direction:
+        csr_zero_rows(W, indices+dofs)
+        W[indices+dofs, indices+dofs] = 1.
 
+        # Inflow (Similarly, on the top of the grid):
+        indices = loc_glob[bc+Nx*(Ny-1),-N:]
+        csr_zero_rows(W, indices)
+        W[indices, indices] = 1.
 
+        csr_zero_rows(W,indices+dofs)
+        W[indices+dofs,indices+dofs]= 1.
 
+    csr_zero_rows(W,2*dofs+m)
+    W[2*dofs+m, 2*dofs+m] = 1.
+    
+    print "Imposing BC:             ", time.time() - time_bc
+    # Solve the system:
+    time_solve = time.time()
+    UVP_new = sla.spsolve(W,F)
+    print "Time to solve: ", time.time() - time_solve
+    # Calculate relative change from iteration:
+    error = float( la.norm(UVP_new - UVP))/la.norm(UVP)
+    # Update UVP-vector:
+    UVP = UVP_new
 
+    #Iterate counter:
+    counter += 1
+    print "Error:               ", error
 
-
-
-
-
-
+   
 ################################################################
 ################################################################
 ##############        PLOTTING        ##########################
@@ -235,10 +279,29 @@ print "Time solving: ", time.time() - time_solve
 ################################################################
 
 fig = plt.figure(1)
-# QUIVERPLOT:
-for K in range(num_el):
-    plt.subplot(121)
-    pl.quiver(X[K], Y[K], UVP[loc_glob[K]], UVP[loc_glob[K]+dofs])
+# QUIVERPLOT (No need to plot everything):
+plt.subplot(121)
+#Get value at each point on NASA grid:
+U = np.zeros( (jdim, idim) )
+V = np.zeros( (jdim, idim) )
+for j in range(Ny):
+    #Rightmost point:
+    U[j,-1] = UVP[loc_glob[j*Nx+Nx-1,N]]
+    V[j,-1] = UVP[loc_glob[j*Nx+Nx-1,N]+dofs]
+    for i in range(Nx):
+        #Leftmost point:
+        U[-1,i] = UVP[loc_glob[Nx*(Ny-1)+i, N*(N-1)]]
+        V[-1,i] = UVP[loc_glob[Nx*(Ny-1)+i, N*(N-1)]+dofs]
+
+        #General point:
+        U[j,i] = UVP[loc_glob[Nx*j+i,0]]
+        V[j,i] = UVP[loc_glob[Nx*j+i,0]+dofs]
+
+#Right- and topmost corner:
+U[-1,-1] = UVP[loc_glob[-1,-1]]
+V[-1,-1] = UVP[loc_glob[-1,-1]+dofs]
+
+pl.quiver(X_el, Y_el, U, V)
 
 pl.xlabel('$x$')
 pl.ylabel('$y$')
