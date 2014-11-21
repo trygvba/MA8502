@@ -84,14 +84,13 @@ def assemble_const_convection_matrix(x_xi, x_eta, y_xi, y_eta, D, N, weights):
             C1[I,J] , C2[I,J] = calculate_const_convection_element(I, J, x_xi, x_eta, y_xi, y_eta, D, N, weights) 
 
     return C1,C2
-def update_convection_matrix(u1,u2,C1,C2,N):
+def update_convection_matrix(u1,u2,C1,C2):
   """Function for updating the convection matrix for each iteration
   INPUT:
     u1: Convection field in x direction from last iteration
     u2: Convection field in y direction from last iteration
     C1: Convection matrix without the nonlinear factor that takes care of the x-components
     C2: Convection matrix without the nonlinear factor that takes care of the y-components
-    N:  Number of points 2*N would be the degrees of freedom
   OUTPUT: 
     C: The nonlinear convection matrix
   """
