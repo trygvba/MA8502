@@ -12,7 +12,7 @@ import time
 import numpy as np
 import scipy.linalg as la
 import scipy.sparse as sparse
-import scipy.sparse.linalg as sla
+
 # Own modules:
 import laplace_functions as lp
 import structured_grids as sg
@@ -53,8 +53,8 @@ thetadef = 25 #angle between elements 3,4 etc
 num_el = 6
 
 #constants
-mu = 1
-N = 30
+mu = 100
+N = 20 #polynomial degree
 N_it = 3 #number of iteration
 eps = 1e-8 #error tolerance
 alpha = np.pi/10.
@@ -411,8 +411,6 @@ W = np.bmat([[la.block_diag(C1 + mu*A,C2 + mu*A) , -B],
             [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]]) #hopefully more efficient
 
 
-
-
 F = np.zeros(num_el*(N-2)**2 + 2*dofs)
 
 print "Assembly time: ", time.time()-t1, ", nice job, get yourself a beer."
@@ -451,14 +449,13 @@ W[2*dofs+m,2*dofs+m] = 1.
 F[2*dofs+m] = 0.
 print "Imposing time:", time.time()-tinflow
 
-
 ################################
 #       SOLVING:
 ################################
-W=sparse.csr_matrix(W);
+
 error = 1.
 counter = 1
-UVP = sla.spsolve(W,F)
+UVP = la.solve(W,F)
 U1 = UVP[:dofs]
 U2 = UVP[dofs:2*dofs]
 
@@ -503,12 +500,11 @@ while (error>eps and counter <= N_it):
     W[2*dofs+m,:] = 0.
     W[2*dofs+m,2*dofs+m] = 1.
     F[2*dofs+m] = 0.
-    W=sparse.csr_matrix(W);
+
     print "Time to update", time.time()-t1
     print "Starting to solve..."
     t1 = time.time()
-   
-    UVP_new = sla.spsolve(W,F)
+    UVP_new = la.solve(W,F)
     print "Time to solve: ", time.time()-t1
     error = float(la.norm(UVP_new - UVP))/la.norm(UVP)
     UVP = UVP_new
@@ -550,4 +546,4 @@ ax.plot_wireframe(X3[1:-1,1:-1],Y3[1:-1,1:-1], P[loc_glob_p[2]].reshape( (N-2,N-
 ax.plot_wireframe(X4[1:-1,1:-1],Y4[1:-1,1:-1], P[loc_glob_p[3]].reshape( (N-2,N-2)))
 ax.plot_wireframe(X5[1:-1,1:-1],Y5[1:-1,1:-1], P[loc_glob_p[4]].reshape( (N-2,N-2)))
 ax.plot_wireframe(X6[1:-1,1:-1],Y6[1:-1,1:-1], P[loc_glob_p[5]].reshape( (N-2,N-2)))
-    pl.show()
+pl.show()

@@ -53,10 +53,15 @@ thetadef = 25 #angle between elements 3,4 etc
 num_el = 6
 
 #constants
+<<<<<<< HEAD
 mu = 1
 N = 30
+=======
+mu = 100
+N = 20 #polynomial degree
 N_it = 3 #number of iteration
 eps = 1e-8 #error tolerance
+>>>>>>> 5c89543307cf0a9752637cc76c36dbc1debc3864
 alpha = np.pi/10.
 v = 1. #inflow velocity
 R = 507.79956092981
@@ -550,4 +555,4 @@ ax.plot_wireframe(X3[1:-1,1:-1],Y3[1:-1,1:-1], P[loc_glob_p[2]].reshape( (N-2,N-
 ax.plot_wireframe(X4[1:-1,1:-1],Y4[1:-1,1:-1], P[loc_glob_p[3]].reshape( (N-2,N-2)))
 ax.plot_wireframe(X5[1:-1,1:-1],Y5[1:-1,1:-1], P[loc_glob_p[4]].reshape( (N-2,N-2)))
 ax.plot_wireframe(X6[1:-1,1:-1],Y6[1:-1,1:-1], P[loc_glob_p[5]].reshape( (N-2,N-2)))
-    pl.show()
+pl.show()
