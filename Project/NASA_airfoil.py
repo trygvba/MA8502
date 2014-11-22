@@ -244,7 +244,7 @@ while(error>eps and counter <=N_it):
 
     print "Starting to impose BC."
     time_bc = time.time()
-     Imposing Boundary Conditions:
+    Imposing Boundary Conditions:
     for bc in range(patches, Nx-Patches):
         # Airfoil (On the bottom of the grid, if you think about it):
         indices = loc_glob[bc,:N]
