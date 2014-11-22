@@ -1,6 +1,7 @@
 # Module containing functions for assembling the convective matrices.
 import numpy as np
 import scipy.linalg as la
+import scipy.sparse as sparse
 
 def calculate_convection_element(I, J, u, x_xi, x_eta, y_xi, y_eta, D, N, weights, tot_points):
     """Function for evaluating ONE element of the convection  matrix.
@@ -95,4 +96,11 @@ def update_convection_matrix(u1,u2,C1,C2):
     C: The nonlinear convection matrix
   """
   return (u1*C1.T).T , (u2*C2.T).T
+
+def update_convection_matrix_sparse(u1,u2,C1,C2):
+	"""Function for updating the sparse convection matrices.
+	INPUT/OUTPUT: Same as for update_convection_matric(u1,u2,C1,C2).
+	"""
+	return (sparse.diags(u1,0,format='csr')*C1), (sparse.diags(u2,0, format='csr')*C2)
+
 
