@@ -93,7 +93,6 @@ A = sparse.lil_matrix( (dofs, dofs), dtype='float64' )            #Stiffness mat
 Cc1 = sparse.lil_matrix( (dofs, dofs), dtype='float64' )          #First constant convection matrix
 Cc2 = sparse.lil_matrix( (dofs, dofs), dtype='float64' )          #Second constant convection matrix
 B =  sparse.lil_matrix( (2*dofs, dofs_p), dtype='float64' )       #Divergence/gradient matrix.
-
 #Initialse local coordinate matrices:
 X = np.zeros( (num_el, N, N) )
 Y = np.zeros( (num_el, N, N) )
@@ -155,7 +154,6 @@ for K in range(num_el):
 
 print "Total assembly time: ", time.time() - time_assembly
 
-print A.getformat()
 # Convert to CSR-matrices, which are more suited for arithmetic:
 A.tocsr()
 Cc1.tocsr()
@@ -235,16 +233,14 @@ while(error>eps and counter <=N_it):
     # Update convection matrices:
     print "Starting ipdate of convection matrices."
     C1, C2 = cf.update_convection_matrix(UVP[:dofs], UVP[dofs:2*dofs], Cc1, Cc2)
-    C1 = sparse.csr_matrix(C1)
-    C2 = sparse.csr_matrix(C2)
-    
     print "Creating W-matrix."
+    W.tolil()
     W = sparse.bmat( [[sparse.block_diag(C1+mu*A, C2 + mu*A), -B],
                       [B.T, None]], format='csr')
 
     print "Starting to impose BC."
     time_bc = time.time()
-    Imposing Boundary Conditions:
+    # Imposing Boundary Conditions:
     for bc in range(patches, Nx-Patches):
         # Airfoil (On the bottom of the grid, if you think about it):
         indices = loc_glob[bc,:N]
@@ -274,7 +270,7 @@ while(error>eps and counter <=N_it):
     error = float( la.norm(UVP_new - UVP))/la.norm(UVP)
     # Update UVP-vector:
     UVP = UVP_new
-    
+
     #Iterate counter:
     counter += 1
     print "Error:               ", error
