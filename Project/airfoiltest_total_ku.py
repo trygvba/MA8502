@@ -32,13 +32,14 @@ import matplotlib.pylab as pl
 #       LET'S GET STARTED:
 #############################################
 
+
 # Order of GLL-points:
 N = 20
-mu = 100
+mu = 300
 v = 1
 alpha = np.pi/20
 num_el = 6 # Number of elements
-N_it = 10
+N_it = 6
 eps = 1e-8
 # Reference element and weights for Velocity and pressure
 xis = qn.GLL_points(N)
@@ -121,63 +122,90 @@ for i in range(num_el):
 
 #Making global Convection matrix
 C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2)
+F1 = np.zeros(dofs)
+F2 = np.zeros(dofs)
+F3 = np.zeros(num_el*(N-2)**2)
 
-#Making global matrix
-W = np.bmat([[la.block_diag(C1 + mu*A,C2 + mu*A) , -B],
-            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]]) #hopefully more efficient
+S1 = C1+mu*A
+S2 = C2+mu*A
 
-print W.shape
-
-
-F = np.zeros(num_el*(N-2)**2 + 2*dofs)
-
-print "Assembly time: ", time.time()-tass, ", nice job, get yourself a beer."
-
-print "Imposing boundary conditions and inflow..."
-tinflow = time.time()
 #Imposing airfoil boundary:
 for i in range(1,5):
     #Lower side of each element:
     indices = loc_glob[i,:N]
-    #indices = loc_glob[i,(N-1)*N:]
-    indices = np.hstack( (indices, indices+dofs) )
-    F[indices] = 0.
-    W[indices] = 0.
-    W[indices, indices] = 1.
+    S1[indices] = 0.
+    S1[indices, indices] = 1.
+    S2[indices] = 0.
+    S2[indices, indices] = 1.
+    F1[indices] = 0.
+    F2[indices] = 0.
 
 # Imposing inflow:
 for i in range(2,4): #was 2,4
     # Upper side of each element:
     indices = loc_glob[i,-N:]
-    #indices = loc_glob[i,:N]
     # For x-direction:
-    F[indices] = v*np.cos(alpha)
-    W[indices] = 0.
-    W[indices, indices] = 1.
+    S1[indices] = 0.
+    S1[indices, indices] = 1.
+    F1[indices] = v*np.cos(alpha)
 
     # For y-direction:
-    indices =indices+dofs
-    F[indices] = v*np.sin(alpha)
-    W[indices] = 0.
-    W[indices, indices] = 1.
+    S2[indices] = 0.
+    S2[indices, indices] = 1.
+    F2[indices] = v*np.sin(alpha)
+m = 5
+Bo = B
+Bo[:,m] = 0.
+W = np.dot((Bo[:dofs].T),np.dot(la.inv(S1),B[:dofs])) 
++   np.dot((Bo[dofs:].T),np.dot(la.inv(S2),B[dofs:]))
+W[m,m] += 1.
 
-m = 0
-W[2*dofs+m,:] = 0.
-W[2*dofs+m,2*dofs+m] = 1.
-F[2*dofs+m] = 0.
+print "Assembly time: ", time.time()-tass, ", nice job, get yourself a beer."
+
+print "Imposing boundary conditions and inflow..."
+tinflow = time.time()
+
 print "Imposing time:", time.time()-tinflow
 
+G3 = -(np.dot(Bo[:dofs].T,la.solve(S1,F1))
++np.dot(Bo[dofs:].T,la.solve(S2,F2)))
 
 ################################
 #       SOLVING:
 ################################
 t1 = time.time()
-W=sparse.csr_matrix(W);
 error = 1.
 counter = 1
-UVP = sla.spsolve(W,F)
-U1 = UVP[:dofs]
-U2 = UVP[dofs:2*dofs]
+# New solving process
+P = la.solve(W,G3)
+G1 = (F1+np.dot(B[:dofs],P))
+G2 = (F2+np.dot(B[dofs:],P))
+#Imposing airfoil boundary:
+for i in range(1,5):
+    #Lower side of each element:
+    indices = loc_glob[i,:N]
+    S1[indices] = 0.
+    S1[indices, indices] = 1.
+    S2[indices] = 0.
+    S2[indices, indices] = 1.
+
+# Imposing inflow:
+for i in range(2,4): #was 2,4
+    # Upper side of each element:
+    indices = loc_glob[i,-N:]
+    # For x-direction:
+    S1[indices] = 0.
+    S1[indices, indices] = 1.
+
+    # For y-direction:
+    S2[indices] = 0.
+    S2[indices, indices] = 1.
+
+
+U1 = la.solve(S1,G1)
+U2 = la.solve(S2,G2)
+
+# solved
 
 print "Time to solve              ", time.time()-t1
 
@@ -185,45 +213,50 @@ while (error>eps and counter <= N_it):
     t1 = time.time()
     print "Solving for the", counter ,"th time" 
     C1,C2 = cf.update_convection_matrix(U1,U2,Cc1,Cc2)
-    W = np.bmat([[la.block_diag(C1 + mu*A,C2 + mu*A) , -B],
-            [B.T, np.zeros(shape=(B.shape[1],B.shape[1]))]])
+    S1 = C1+mu*A
+    S2 = C2+mu*A
+    W =   np.dot((Bo[:dofs].T),np.dot(la.inv(S1),B[:dofs]))
+    +     np.dot((Bo[dofs:].T),np.dot(la.inv(S2),B[dofs:]))
+    W[m,m] += 1.
+    t1 = time.time()
+# New solving process
+    P_new = la.solve(W,G3)
+    G1 = (F1+np.dot(B[:dofs],P_new))
+    G2 = (F2+np.dot(B[dofs:],P_new))
+    print "Time to update", time.time()-t1
+    print "Starting to solve..."
 #Imposing airfoil boundary:
     for i in range(1,5):
         #Lower side of each element:
         indices = loc_glob[i,:N]
-        #indices = loc_glob[i,(N-1)*N:]
-        indices = np.hstack( (indices, indices+dofs) )
-        W[indices] = 0.
-        W[indices, indices] = 1.
+        S1[indices] = 0.
+        S1[indices, indices] = 1.
+        S2[indices] = 0.
+        S2[indices, indices] = 1.
 
 # Imposing inflow:
-    for i in range(2,4):
+    for i in range(2,4): #was 2,4
         # Upper side of each element:
         indices = loc_glob[i,-N:]
-        #indices = loc_glob[i,:N]
         # For x-direction:
-        W[indices] = 0.
-        W[indices, indices] = 1.
+        S1[indices] = 0.
+        S1[indices, indices] = 1.
 
         # For y-direction:
-        indices =indices+dofs
-        W[indices] = 0.
-        W[indices, indices] = 1.
-    m = N-3
-    W[2*dofs+m,:] = 0.
-    W[2*dofs+m,2*dofs+m] = 1.
-    F[2*dofs+m] = 0.
-    W=sparse.csr_matrix(W);
-    print "Time to update", time.time()-t1
-    print "Starting to solve..."
-    t1 = time.time()
-   
-    UVP_new = sla.spsolve(W,F)
+        S2[indices] = 0.
+        S2[indices, indices] = 1.
+
+
+    U1_new = la.solve(S1,G1)
+    U2_new = la.solve(S2,G2)
+
+# solved
+
     print "Time to solve: ", time.time()-t1
-    error = float(la.norm(UVP_new - UVP))/la.norm(UVP)
-    UVP = UVP_new
-    U1 = UVP_new[:dofs]
-    U2 = UVP_new[dofs:2*dofs]
+    error = float(la.norm(P_new - P))/la.norm(P)
+    P = np.copy(P_new)
+    U1 = np.copy(U1_new)
+    U2 = np.copy(U2_new)
     counter += 1
     print "error :                    ", error
 
@@ -235,7 +268,6 @@ while (error>eps and counter <= N_it):
 
 fig = plt.figure(1)
 # QUIVERPLOT #
-P = UVP[2*dofs:]
 for i in range(num_el):
   X,Y = gh.gordon_hall_grid(gm.gammas(i,1),gm.gammas(i,2),gm.gammas(i,3),gm.gammas(i,4), xis, xis)
   plt.subplot(121)
