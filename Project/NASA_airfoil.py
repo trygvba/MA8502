@@ -33,9 +33,9 @@ import matplotlib.pylab as pl
 #############################################
 
 # Main parameters:
-N = 5              # Number of GLL-points in each direction.
+N = 6              # Number of GLL-points in each direction.
 mu = 0.01             # Viscosity.
-alpha = np.pi/20.   # Inflow angle.
+alpha = np.pi/10.   # Inflow angle.
 v = 1.             # Inflow velocity.
 N_it = 20           # Number of iterations.
 eps = 1e-8          # Error tolerance.
