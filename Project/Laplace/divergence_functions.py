@@ -75,3 +75,58 @@ def assemble_local_divergence_matrix(X_xi, X_eta, Y_xi, Y_eta, P_evals, D, weigh
             
     return B
 
+
+def pressure_at_airfoil(K, N, loc_glob_p, P_evals, P_vec):
+    """Function giving the pressure evaluated at the bottom points of
+    an element.
+    INPUT:
+        K: Element number.
+        N: Number of GLL-points.
+        loc_glob_p: Local-to-global matrix for the pressure grid.
+        P_evals: Basis function point evaluation matrix for the pressure basis.
+        P_vec: Pressure coeffecients in the global basis.
+    OUTPUT:
+        P: An N-array containing the pressure extrapolated to the bottom boundary of the element.
+    """
+    # Initialise result vector.
+    P = np.zeros(N)
+
+    #Iterate over each basis point in the element:
+    for I in range((N-2)**2):
+        # x-direction:
+        i = I%(N-2)
+        # y-direction:
+        j = I/(N-2)
+
+        # Calculate contribution to each point:
+        for k in range(N):
+            #       Pressure coefficient    X-basis     Y-basis
+            P[k] += P_vec[loc_glob_p[K,I]]*P_evals[i,k]*P_evals[j,0]
+
+    return P
+
+
+def calculate_lift_and_drag_contribution(X_el, Y_el, K, N, loc_glob_p, P_evals, P_vec, weights):
+    """Calculates the Drag and Lift contribution from a given element.
+    INPUT:
+        In addition to input for pressure_at_airfoil:
+        X_el, Y_el: Element grid matrices.
+        weights: GLL-weights.
+    OUTPUT:
+        [D,L]: Array with Drag and Lift contribution.
+    """
+    #Start by calculating the pressure at the GLL-points:
+    P = pressure_at_airfoil(K,N, loc_glob_p, P_evlas, P_vec)
+    
+    # Get interval end points:
+    xstart = X_el[0,K]
+    xend = X_el[0,K+1]
+
+    ystart = Y_el[0,K]
+    yend = Y_el[0,K+1]
+
+    #Calculate weighted sum:
+    temp = 0.5*np.dot(weights, P)
+    #                     DRAG      ,   LIFT
+    return temp*np.array([yend-ystar, xstart-xend])
+
