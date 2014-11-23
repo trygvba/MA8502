@@ -33,9 +33,9 @@ import matplotlib.pylab as pl
 #############################################
 
 # Main parameters:
-N = 6              # Number of GLL-points in each direction.
+N = 5              # Number of GLL-points in each direction.
 mu = 0.01             # Viscosity.
-alpha = np.pi/10.   # Inflow angle.
+alpha = np.pi/20.   # Inflow angle.
 v = 1.             # Inflow velocity.
 N_it = 20           # Number of iterations.
 eps = 1e-8          # Error tolerance.
@@ -272,6 +272,31 @@ while(error>eps and counter <=N_it):
     #Iterate counter:
     counter += 1
     print "Error:               ", error
+
+#################################################################
+#################################################################
+#####################  LIFT AND DRAG    #########################
+#################################################################
+#################################################################
+DL = np.zeros(2)
+
+#Calculate contributions:
+for K in range(patches, Nx-patches):
+    DL += df.calculate_lift_and_drag_contribution(X_el, Y_el, K, N,
+                                                  loc_glob_p,
+                                                  P_evals,
+                                                  UVP[2*dofs:],
+                                                  weights)
+
+#################################
+print "Drag: ", DL[0]
+print "Lift: ", DL[1]
+
+
+
+
+
+
 
  
 ################################################################

@@ -116,7 +116,7 @@ def calculate_lift_and_drag_contribution(X_el, Y_el, K, N, loc_glob_p, P_evals, 
         [D,L]: Array with Drag and Lift contribution.
     """
     #Start by calculating the pressure at the GLL-points:
-    P = pressure_at_airfoil(K,N, loc_glob_p, P_evlas, P_vec)
+    P = pressure_at_airfoil(K,N, loc_glob_p, P_evals, P_vec)
     
     # Get interval end points:
     xstart = X_el[0,K]
@@ -128,5 +128,5 @@ def calculate_lift_and_drag_contribution(X_el, Y_el, K, N, loc_glob_p, P_evals, 
     #Calculate weighted sum:
     temp = 0.5*np.dot(weights, P)
     #                     DRAG      ,   LIFT
-    return temp*np.array([yend-ystar, xstart-xend])
+    return temp*np.array([yend-ystart, xstart-xend])
 
