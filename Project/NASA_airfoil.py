@@ -34,12 +34,14 @@ import matplotlib.pylab as pl
 
 # Main parameters:
 N = 5              # Number of GLL-points in each direction.
-mu = 0.01             # Viscosity.
-alpha = np.pi/20.   # Inflow angle.
+Re = 100.          # Reynolds number.
+alpha = np.pi/20.  # Inflow angle.
 v = 1.             # Inflow velocity.
 N_it = 20           # Number of iterations.
 eps = 1e-8          # Error tolerance.
 
+
+mu = 1./Re
 ###################################
 # Reading NASA-grid:
 X_el, Y_el = sg.read_PLOT3D('Mesh/NASA_grids/grid_coarse.xyz')
