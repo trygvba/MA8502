@@ -33,15 +33,15 @@ import matplotlib.pylab as pl
 #############################################
 
 # Main parameters:
-N = 5              # Number of GLL-points in each direction.
-Re = 100.          # Reynolds number.
-alpha = np.pi/20.  # Inflow angle.
-v = 1.             # Inflow velocity.
-N_it = 20           # Number of iterations.
-eps = 1e-8          # Error tolerance.
+N = 5                # Number of GLL-points in each direction.
+Re = 100.            # Reynolds number.
+alpha = np.pi/20.    # Inflow angle.
+v = 1.               # Inflow velocity.
+N_it = 20            # Number of iterations.
+eps = 1e-8           # Error tolerance.
 
 
-mu = 1./Re
+mu = 1./Re           #Diffusivitiy.
 ###################################
 # Reading NASA-grid:
 X_el, Y_el = sg.read_PLOT3D('Mesh/NASA_grids/grid_coarse.xyz')
@@ -291,8 +291,14 @@ for K in range(patches, Nx-patches):
                                                   weights)
 
 #################################
+print "Drag and lift in x,y-coordinate system: "
 print "Drag: ", DL[0]
 print "Lift: ", DL[1]
+
+print " "
+print "Drag and lift in rotated coordinate system:"
+print "Drag: ", np.cos(alpha)*DL[0] + np.sin(alpha)*DL[1]
+print "Lift: ", -np.sin(alpha)*DL[0] + np.cos(alpha)*DL[1]
 
 
 
@@ -309,7 +315,7 @@ print "Lift: ", DL[1]
 
 fig = plt.figure(1)
 # QUIVERPLOT (No need to plot everything):
-plt.subplot(121)
+#plt.subplot(121)
 #Get value at each point on NASA grid:
 U = np.zeros( (jdim, idim) )
 V = np.zeros( (jdim, idim) )
@@ -337,13 +343,13 @@ plt.plot( X_el[0, patches:(idim-patches)], Y_el[0, patches:(idim-patches)], 'b')
 pl.xlabel('$x$')
 pl.ylabel('$y$')
 pl.axis('image')
-
+'''
 # PRESSURE PLOT:
 plt.subplot(122)
 ax = fig.add_subplot(122, projection='3d')
 for K in range(num_el):
     ax.plot_wireframe( X[K, 1:-1, 1:-1], Y[K, 1:-1, 1:-1], UVP[loc_glob_p[K]+2*dofs].reshape((N-2,N-2)))
-
+'''
 pl.show()
 
 
